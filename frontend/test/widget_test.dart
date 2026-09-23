@@ -89,6 +89,9 @@ void main() {
       await nav(t, 'Мой план');
       expect(find.text('Твой план'), findsWidgets);
       await nav(t, 'Карьерный пропуск');
+      await t.ensureVisible(find.text('Задания дня'));
+      await t.tap(find.text('Задания дня'));
+      await t.pumpAndSettle();
       expect(find.text('Задания дня'), findsOneWidget);
       expect(find.text('Ежедневный шаг'), findsOneWidget);
       expect(find.text('Кейс дня'), findsOneWidget);
