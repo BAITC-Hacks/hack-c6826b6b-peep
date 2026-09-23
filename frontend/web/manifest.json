@@ -1,0 +1,19 @@
+{
+  "name": "Career Quest",
+  "short_name": "Career Quest",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#080D22",
+  "theme_color": "#080D22",
+  "description": "Career Quest — навигатор развития сотрудника.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icons/career-quest.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

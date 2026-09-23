@@ -1,0 +1,24 @@
+name: career_quest
+description: Career Quest — пространство развития сотрудника.
+publish_to: 'none'
+version: 0.2.0+2
+environment:
+  sdk: ^3.13.4
+dependencies:
+  file_picker: ^13.1.0
+  flutter:
+    sdk: flutter
+  http: ^1.6.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/career_landscape.png
+    - assets/images/career_city_reference.png
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
