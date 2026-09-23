@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../core/api.dart';
 import '../widgets/ui.dart';
+import '../widgets/career_pass.dart';
 import 'login.dart';
 
 part 'career_views.dart';
@@ -86,7 +87,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
       loginMessage = '',
       search = '',
       filter = '',
-      seasonTab = 'tasks';
+      seasonTab = 'pass';
   String? returnRoute;
   final Map<String, Json> viewFilters = {};
   final Map<String, Json> routeState = {};
@@ -382,7 +383,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
       returnRoute = null;
       search = '';
       filter = '';
-      seasonTab = 'tasks';
+      seasonTab = 'pass';
       listPage = 1;
     });
     SystemNavigator.routeInformationUpdated(
