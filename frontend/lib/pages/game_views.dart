@@ -51,6 +51,11 @@ extension _GameViews on _WorkspaceState {
   );
   Widget seasonView() {
     final content = map(data['content']);
+    final reset = DateTime.tryParse(value(content['resets_at'], ''));
+    final minutes =
+        reset?.difference(api.estimatedServerTime).inMinutes.clamp(0, 1440) ??
+        0;
+    final remaining = '${minutes ~/ 60} ч ${minutes % 60} мин';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -90,7 +95,7 @@ extension _GameViews on _WorkspaceState {
           card(
             'Пять дней развития',
             Text(
-              'Подтверждено ${content['weekly_days'] ?? 0} / 5 дней на неделе. Награда: 250 XP.\nЗадания обновятся ${value(content['resets_at'])}.',
+              'Подтверждено ${content['weekly_days'] ?? 0} / 5 дней на неделе. Награда: 250 XP.\nДо обновления заданий: $remaining · Asia/Almaty.',
               style: const TextStyle(height: 1.8),
             ),
           ),
@@ -246,6 +251,23 @@ extension _GameViews on _WorkspaceState {
               reload();
             },
           ),
+          if (filter == 'week')
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: select(
+                'Неделя сезона',
+                value(extraFilters['week'], ''),
+                [
+                  ('', 'Текущая'),
+                  for (var w = 0; w < 13; w++) ('$w', 'Неделя ${w + 1}'),
+                ],
+                (v) {
+                  extraFilters['week'] = v.isEmpty ? null : v;
+                  listPage = 1;
+                  reload();
+                },
+              ),
+            ),
           const SizedBox(height: 20),
           const Text(
             'Рейтинг подтверждённого участия в программе. Не оценка профессиональной результативности.',

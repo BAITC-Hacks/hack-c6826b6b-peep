@@ -80,7 +80,17 @@ extension _HrViews on _WorkspaceState {
           'Где команде нужна поддержка',
           'Нажмите навык, чтобы открыть сотрудников с дефицитом.',
         ),
-        for (final gap in records(data['skills']))
+        if (page == 'skills') skillMatrix(records(data['skills'])),
+        if (page != 'skills')
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: actions([
+              button('Открыть всю матрицу навыков', () => go('skills')),
+            ]),
+          ),
+        for (final gap in records(
+          data['skills'],
+        ).take(page == 'skills' ? records(data['skills']).length : 6))
           card(
             gap['name'],
             Column(
@@ -192,6 +202,81 @@ extension _HrViews on _WorkspaceState {
       }
     });
     return result;
+  }
+
+  Widget skillMatrix(List<Json> cells) {
+    final departments =
+        cells.map((r) => r['department'] as String).toSet().toList()..sort();
+    final skills = <String, String>{
+      for (final r in cells) r['skill_id'] as String: r['name'] as String,
+    };
+    Widget cell(String text, {Color? color, double width = 110}) => Container(
+      width: width,
+      height: 70,
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.all(3),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color ?? panelRaised,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 12),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                cell('Подразделение', width: 180),
+                for (final name in skills.values) cell(name),
+              ],
+            ),
+            for (final dep in departments)
+              Row(
+                children: [
+                  cell(dep, width: 180),
+                  for (final sid in skills.keys)
+                    Builder(
+                      builder: (ctx) {
+                        final row = cells
+                            .where(
+                              (r) =>
+                                  r['department'] == dep &&
+                                  r['skill_id'] == sid,
+                            )
+                            .firstOrNull;
+                        final gap = row?['mean_relative_gap'] as num?;
+                        return Tooltip(
+                          message: row == null
+                              ? 'Навык не требуется'
+                              : 'Дефицит: ${row['gap_count']} / ${row['assessed_count']}. Без оценки: ${row['missing_count']}. Всего требуется: ${row['required_count']}.',
+                          child: cell(
+                            gap == null ? 'Нет данных' : pct(gap * 100),
+                            color: gap == null
+                                ? panel
+                                : violet.withValues(
+                                    alpha: .08 + .6 * gap.toDouble(),
+                                  ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> editHrFilters() async {

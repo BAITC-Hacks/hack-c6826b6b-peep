@@ -90,7 +90,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   String? returnRoute;
   final Map<String, Json> viewFilters = {};
   final Map<String, Json> routeState = {};
-  Timer? previewDebounce;
+  Timer? previewDebounce, countdownTimer;
   int previewGeneration = 0;
   Json get extraFilters =>
       viewFilters.putIfAbsent(page.split('/').first, () => {});
@@ -138,6 +138,11 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     api = widget.api ?? CareerApi();
+    countdownTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted && user != null && page == 'season' && seasonTab == 'tasks') {
+        setState(() {});
+      }
+    });
     WidgetsBinding.instance.addObserver(this);
     returnRoute = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
     api.onUnauthorized = () {
@@ -166,6 +171,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   @override
   void dispose() {
     previewDebounce?.cancel();
+    countdownTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     api.onUnauthorized = null;
     if (widget.api == null) api.dispose();
@@ -341,7 +347,7 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
         final s = await api.get('/api/me/season');
         if (seasonTab == 'leaderboard') {
           s['content'] = await api.get(
-            '/api/seasons/${segment(s['season']['id'])}/leaderboard?${query({'page': listPage, 'scope': filter.isEmpty ? 'overall' : filter})}',
+            '/api/seasons/${segment(s['season']['id'])}/leaderboard?${query({'page': listPage, 'scope': filter.isEmpty ? 'overall' : filter, if (filter == 'week' && extraFilters['week'] != null) 'week': extraFilters['week']})}',
           );
         } else if (seasonTab == 'hall') {
           s['content'] = await api.get('/api/seasons/hall-of-fame');

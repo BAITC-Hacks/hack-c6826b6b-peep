@@ -292,7 +292,7 @@ def install(app,current_user,employee,hr):
         return mutate(user,'complete:'+pid,body,idempotency_key,lambda s,n:career.transition(s,user['employee_id'],pid,'complete',body.model_dump(),n))
 
     @app.get('/api/me/history')
-    def history(status:str|None=None,origin:Literal['imported','self_report']|None=None,format:str|None=None,
+    def history(status:Literal['completed','in_progress','registered','attended','dropped','no_show','declined','overdue']|None=None,origin:Literal['imported','self_report']|None=None,format:Literal['online','offline','self_paced']|None=None,
                 date_from:date|None=None,date_to:date|None=None,page:int=Query(1,ge=1),user=Depends(employee)):
         def get(s,n):
             rows=career.history(s,user['employee_id'])
@@ -500,7 +500,7 @@ def install_game(app,read,mutate,current_user,employee,hr):
         return mutate(user,'purchase',body,idempotency_key,lambda s,n:game.create_order(s,user['employee_id'],body.model_dump(),n))
 
     @app.get('/api/me/rewards')
-    def rewards(status:str|None=None,user=Depends(employee)):
+    def rewards(status:Literal['available','reserved','fulfilled','expired','requested','approved','ready','delivered','cancelled','rejected']|None=None,user=Depends(employee)):
         return read(lambda s,n:dict(entitlements=[e for e in s['entitlements'].values() if e['employee_id']==user['employee_id'] and (not status or e['status']==status)],
             orders=[game.order_view(o,user['employee_id']) for o in s['orders'].values() if o['employee_id']==user['employee_id'] and (not status or o['status']==status)]))
 
@@ -576,7 +576,7 @@ def install_game(app,read,mutate,current_user,employee,hr):
         return mutate(user,'decision:'+rid,body,idempotency_key,lambda s,n:game.decide_review(s,rid,body.decision,body.comment,n))
 
     @app.get('/api/hr/reward-orders')
-    def hr_orders(status:str|None=None,payment_kind:Literal['coins','pass_entitlement']|None=None,employee_id:str|None=None,user=Depends(hr)):
+    def hr_orders(status:Literal['requested','approved','ready','delivered','cancelled','rejected']|None=None,payment_kind:Literal['coins','pass_entitlement']|None=None,employee_id:str|None=None,user=Depends(hr)):
         return read(lambda s,n:dict(items=[game.order_view(o)|{'employee_name':s['employees'][o['employee_id']]['full_name']} for o in s['orders'].values()
             if (not status or o['status']==status) and (not payment_kind or o['payment_kind']==payment_kind) and (not employee_id or o['employee_id']==employee_id)]))
 
