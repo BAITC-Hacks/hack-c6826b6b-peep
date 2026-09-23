@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from . import career, game, analytics
 from .assistant import CareerAssistant, context_for
 from .engine import require, Problem, own, stamp, instant
+from .policies import policy
 
 
 class Input(BaseModel):
@@ -22,7 +23,7 @@ class Revision(Input):
 
 class GoalInput(Revision):
     role_id:str=Field(min_length=1,max_length=100)
-    grade_id:Literal['Junior','Middle','Senior','Lead']
+    grade_id:str=Field(min_length=1,max_length=100)
     confirm_archive_plan:bool=False
 
 
@@ -49,13 +50,13 @@ class ExcludeInput(Revision):
 
 
 class OrderInput(Revision):
-    item_ids:list[str]=Field(max_length=3)
+    item_ids:list[str]=Field(max_length=10)
 
 
 class SimulationInput(Input):
     role_id:str
     grade_id:str
-    activity_ids:list[str]=Field(max_length=3)
+    activity_ids:list[str]=Field(max_length=10)
 
 
 class ApplyInput(Revision):
@@ -158,7 +159,22 @@ def install(app,current_user,employee,hr):
         require(app.state.engine is not None,'NOT_READY','Стартовые данные недоступны',503)
         return app.state.engine
     def read(fn): return engine().read(fn)
-    def mutate(user,route,body,key,fn): return engine().mutate(user,route,body.model_dump(),key,fn)
+    def mutate(user,route,body,key,fn):
+        if user['role']!='hr':return engine().mutate(user,route,body.model_dump(),key,fn)
+        from . import admin_service
+        permission={'create_season':'seasons.manage','season_edit':'seasons.manage','publish':'seasons.publish',
+                    'decision':'reviews.manage','fulfill':'rewards.fulfill','create_item':'shop.manage',
+                    'edit_item':'shop.manage','edit_pool':'shop.manage'}.get(route.split(':')[0])
+        require(permission,'FORBIDDEN','Административное действие не разрешено',403)
+        admin_service.check(user,permission)
+        def run(s,n,db):
+            actor=admin_service.fresh_user(app.state.db,db,user,permission)
+            payload=body.model_dump()
+            if payload.get('stock_total') is not None:admin_service.check(actor,'stock.manage')
+            result=fn(s,n)
+            admin_service.audit(db,actor,'hr.'+route,route,{},result,payload.get('comment') or payload.get('note') or 'Операция через HR-кабинет',n)
+            return result
+        return engine().mutate(user,route,body.model_dump(),key,run,include_db=True)
     def public_profile(s,eid,now):
         e=s['employees'].get(eid)
         require(e,'NOT_FOUND','Сотрудник не найден',404)
@@ -168,7 +184,7 @@ def install(app,current_user,employee,hr):
     @app.get('/api/reference')
     @app.get('/api/meta')
     def reference(user=Depends(current_user)):
-        return read(lambda s,n:dict(roles=list(s['roles'].values()),skills=list(s['skills'].values()),allowed_formats=career.FORMATS,timezones=career.TIMEZONES,showcase=s.get('showcase',False)))
+        return read(lambda s,n:dict(roles=[r for r in s['roles'].values() if r.get('active',True)],skills=[v for v in s['skills'].values() if v.get('active',True)],allowed_formats=career.FORMATS,timezones=career.TIMEZONES,showcase=s.get('showcase',False)))
 
     @app.get('/api/me/profile')
     def profile(user=Depends(employee)):
@@ -327,7 +343,8 @@ def install(app,current_user,employee,hr):
     @app.post('/api/me/assistant/explain')
     async def explain(body:ExplainInput,user=Depends(employee)):
         result=read(lambda s,n:context_for(s,user['employee_id'],n,body.question))
-        answer=await assistant.explain(result['data'],user['employee_id'],result['meta']['state_revision'])
+        settings=read(lambda s,n:policy(s,'assistant'))['data']
+        answer=await assistant.explain(result['data'],user['employee_id'],result['meta']['state_revision'],settings)
         return {'data':answer,'meta':result['meta']}
 
     def hr_filters(department:str|None=None,role_id:str|None=None,grade_id:str|None=None,date_from:date|None=None,date_to:date|None=None,
@@ -427,7 +444,7 @@ def install_game(app,read,mutate,current_user,employee,hr):
     def xp(season_id:str|None=None,page:int=Query(1,ge=1),user=Depends(employee)):
         def get(s,n):
             season=game.choose_season(s,season_id,user['employee_id'])
-            rows=sorted([r for r in s['xp'].values() if r['season_id']==season['id'] and r['employee_id']==user['employee_id']],key=lambda r:r['effective_at'],reverse=True)
+            rows=sorted([r for r in list(s['xp'].values())+list(s.get('xp_adjustments',{}).values()) if r['season_id']==season['id'] and r['employee_id']==user['employee_id']],key=lambda r:r['effective_at'],reverse=True)
             return dict(items=rows[(page-1)*20:page*20],total=len(rows),page=page)
         return read(get)
 
@@ -543,11 +560,12 @@ def install_game(app,read,mutate,current_user,employee,hr):
                 start=instant(changes['starts_at'])
                 require(start.tzinfo is not None and start.astimezone(game.ZONE).time().isoformat()=='00:00:00','INVALID_START','Начало сезона — полночь Asia/Almaty',422)
                 if season['status']=='scheduled': require(start>n,'INVALID_START','Новая дата старта должна быть в будущем',422)
-                end=start+timedelta(days=90)
+                rules=policy(s,'economy',season)
+                end=start+timedelta(days=rules['season_days'])
                 for other in s['seasons'].values():
                     if other['id']!=sid and other['status']!='draft':
                         require(not (start<instant(other['ends_at']) and instant(other['starts_at'])<end),'SEASON_OVERLAP','Периоды заработка пересекаются')
-                season.update(starts_at=stamp(start),ends_at=stamp(end),review_deadline=stamp(end+timedelta(days=7)),claim_deadline=stamp(end+timedelta(days=14)))
+                season.update(starts_at=stamp(start),ends_at=stamp(end),review_deadline=stamp(end+timedelta(days=rules['review_days'])),claim_deadline=stamp(end+timedelta(days=rules['claim_days'])))
             if 'employee_ids' in changes:
                 ids=changes.pop('employee_ids')
                 require(ids and len(ids)==len(set(ids)) and all(e in s['employees'] for e in ids),'INVALID_ROSTER','Проверьте список участников',422)
@@ -592,7 +610,7 @@ def install_game(app,read,mutate,current_user,employee,hr):
     def create_item(body:ItemInput,user=Depends(hr),idempotency_key:str|None=Header(None)):
         def update(s,n):
             require(body.id not in s['items'],'DUPLICATE_ITEM','Такой ID уже существует')
-            require(body.unit_budget_kzt<=body.coin_price*100,'INVALID_BUDGET','Лимит товара превышает обеспечение монет',422)
+            require(body.unit_budget_kzt<=body.coin_price*policy(s,'economy')['coin_backing'],'INVALID_BUDGET','Лимит товара превышает обеспечение монет',422)
             s['items'][body.id]=body.model_dump(exclude={'expected_revision'})|dict(shop_visible=True,reserved=0,delivered=0,version=1,image_asset=body.category)
             return game.item_view(s['items'][body.id])
         return mutate(user,'create_item',body,idempotency_key,update)
@@ -604,7 +622,7 @@ def install_game(app,read,mutate,current_user,employee,hr):
             require(item and item['shop_visible'],'NOT_FOUND','Товар не найден',404)
             changes=body.model_dump(exclude_none=True,exclude={'expected_revision'})
             require(changes.get('stock_total',item['stock_total'])>=item['reserved']+item['delivered'],'INVALID_STOCK','Остаток меньше уже зарезервированного и выданного',422)
-            require(changes.get('coin_price',item['coin_price'])*100>=item['unit_budget_kzt'],'INVALID_BUDGET','Цена не покрывает лимит обеспечения',422)
+            require(changes.get('coin_price',item['coin_price'])*policy(s,'economy')['coin_backing']>=item['unit_budget_kzt'],'INVALID_BUDGET','Цена не покрывает лимит обеспечения',422)
             if any(item[k]!=v for k,v in changes.items()):
                 item.update(changes); item['version']+=1
             return game.item_view(item)

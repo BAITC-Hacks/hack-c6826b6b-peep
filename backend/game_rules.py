@@ -48,7 +48,10 @@ def streak_calendar(season, active_dates, pending_dates, now):
     count = best = freezes = 0
     started = False
     entries, milestones = [], {}
-    for i in range(90):
+    rules=season.get('policies',{}).get('streaks',{})
+    amounts={m['days']:m['xp'] for m in rules['milestones']} if 'milestones' in rules else STREAK_XP
+    limit=rules.get('freezes',2)
+    for i in range((end-first).days):
         d = first + timedelta(days=i)
         key = d.isoformat()
         state = 'future'
@@ -58,9 +61,9 @@ def streak_calendar(season, active_dates, pending_dates, now):
                 count += 1
                 state = 'completed'
                 best = max(best, count)
-                if count in STREAK_XP:
+                if count in amounts:
                     milestones.setdefault(count, key)
-            elif started and freezes < 2:
+            elif started and freezes < limit:
                 freezes += 1
                 state = 'freeze'
             else:
@@ -69,7 +72,7 @@ def streak_calendar(season, active_dates, pending_dates, now):
         elif d == today:
             state = 'today'
         entries.append(dict(date=key, status=state, pending_hr=key in pending_dates))
-    return dict(days=entries, current_streak=count, best_streak=best, freeze_remaining=2-freezes,
+    return dict(days=entries, current_streak=count, best_streak=best, freeze_remaining=limit-freezes,
                 milestones=milestones, active_days=len(active_dates), preliminary=bool(pending_dates))
 
 
@@ -148,6 +151,9 @@ def normalise_answer(task, answer):
                 'INVALID_ANSWER', 'Некорректный формат ответа', 422)
         if f['type'] == 'decimal':
             result[f['key']] = rounded(value)
+        elif task.get('custom'):
+            result[f['key']]=str(value).strip()
+            if f['type']=='choice': require(result[f['key']] in f['options'],'INVALID_ANSWER','Выберите один из указанных вариантов',422)
         else:
             result[f['key']] = str(value).strip().upper()
             if f['type'] == 'integer':

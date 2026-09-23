@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/api.dart';
+
 // Career Quest visual system. See docs/08-design-system.md before adding screens.
 const night = Color(0xFF080D22);
 const panel = Color(0xFF131D38);
@@ -41,46 +43,61 @@ class QuestBackdrop extends StatelessWidget {
   const QuestBackdrop({super.key, required this.child});
   final Widget child;
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: night,
-    child: Stack(
-      children: [
-        const Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment(.95, -.95),
-                  radius: 1.2,
-                  colors: [Color(0xFF222655), Color(0xFF0D1530), night],
-                  stops: [0, .5, 1],
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<Map<String, dynamic>>(
+        valueListenable: runtimeConfiguration,
+        builder: (context, config, _) {
+          final raw = config['branding']?['background'];
+          final background =
+              raw is String && RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(raw)
+              ? Color(int.parse('FF${raw.substring(1)}', radix: 16))
+              : night;
+          return ColoredBox(
+            color: background,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: Alignment(.95, -.95),
+                          radius: 1.2,
+                          colors: [
+                            const Color(0xFF222655),
+                            const Color(0xFF0D1530),
+                            background,
+                          ],
+                          stops: [0, .5, 1],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ),
-        const Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment(1.1, 1.15),
-                  radius: .9,
-                  colors: [
-                    Color(0x382B386B),
-                    Color(0x226C386D),
-                    Color(0x00080D22),
-                  ],
-                  stops: [0, .42, 1],
+                const Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: Alignment(1.1, 1.15),
+                          radius: .9,
+                          colors: [
+                            Color(0x382B386B),
+                            Color(0x226C386D),
+                            Color(0x00080D22),
+                          ],
+                          stops: [0, .42, 1],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                Material(type: MaterialType.transparency, child: child),
+              ],
             ),
-          ),
-        ),
-        Material(type: MaterialType.transparency, child: child),
-      ],
-    ),
-  );
+          );
+        },
+      );
 }
 
 class Brand extends StatelessWidget {
@@ -88,29 +105,45 @@ class Brand extends StatelessWidget {
   final bool light;
   final bool compact;
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const QuestMark(),
-      if (!compact) ...[
-        const SizedBox(width: 11),
-        const Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              'Career Quest',
-              style: TextStyle(
-                color: ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -.6,
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<Map<String, dynamic>>(
+        valueListenable: runtimeConfiguration,
+        builder: (context, config, _) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if ((runtimeConfiguration.value['branding']?['logo_url'] ?? '')
+                .toString()
+                .isNotEmpty)
+              Image.network(
+                runtimeConfiguration.value['branding']['logo_url'],
+                width: 38,
+                height: 38,
+                fit: BoxFit.contain,
+                errorBuilder: (_, e, s) => const QuestMark(),
+              )
+            else
+              const QuestMark(),
+            if (!compact) ...[
+              const SizedBox(width: 11),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    runtimeConfiguration.value['branding']?['app_name'] ??
+                        'Career Quest',
+                    style: const TextStyle(
+                      color: ink,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -.6,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
+            ],
+          ],
         ),
-      ],
-    ],
-  );
+      );
 }
 
 /// Career Quest mark: a mountain route leading to a lit summit.

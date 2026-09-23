@@ -3,7 +3,7 @@ part of 'workspace.dart';
 
 extension _GameViews on _WorkspaceState {
   Widget seasonSummary(Json s) => card(
-    'Твой сезон · уровень ${s['level']} / 100',
+    'Твой сезон · уровень ${s['level']} / ${s['max_level'] ?? 100}',
     Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -66,7 +66,7 @@ extension _GameViews on _WorkspaceState {
         actions([
           for (final t in [
             ('tasks', 'Задания дня'),
-            ('pass', '100 уровней'),
+            ('pass', '${data['max_level'] ?? 100} уровней'),
             ('streak', 'Календарь серии'),
             ('leaderboard', 'Рейтинг'),
             ('xp', 'Журнал XP'),
@@ -88,15 +88,16 @@ extension _GameViews on _WorkspaceState {
         const SizedBox(height: 24),
         if (seasonTab == 'tasks') ...[
           card(
-            'Пять дней развития',
+            'Недельная миссия',
             Text(
-              'Подтверждено ${content['weekly_days'] ?? 0} / 5 дней на неделе. Награда: 250 XP.\nЗадания обновятся ${value(content['resets_at'])}.',
+              'Подтверждено ${content['weekly_days'] ?? 0} / ${content['weekly_required'] ?? 5} дней на неделе. Награда: ${content['weekly_xp'] ?? 250} XP.\nЗадания обновятся ${value(content['resets_at'])}.',
               style: const TextStyle(height: 1.8),
             ),
           ),
           for (final task in records(content['items']))
             card(
-              task['kind'] == 'main' ? 'Ежедневный шаг' : 'Кейс дня',
+              task['title'] ??
+                  (task['kind'] == 'main' ? 'Ежедневный шаг' : 'Кейс дня'),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -348,16 +349,35 @@ extension _GameViews on _WorkspaceState {
                 for (final field in records(task['answer_fields']))
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: TextField(
-                      controller: controllers[field['key']],
-                      keyboardType: field['type'] == 'text'
-                          ? TextInputType.text
-                          : const TextInputType.numberWithOptions(
-                              decimal: true,
-                              signed: true,
+                    child: field['type'] == 'choice'
+                        ? DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: field['label'],
                             ),
-                      decoration: InputDecoration(labelText: field['label']),
-                    ),
+                            items: (field['options'] as List? ?? [])
+                                .map(
+                                  (v) => DropdownMenuItem(
+                                    value: v.toString(),
+                                    child: Text(v.toString()),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) =>
+                                controllers[field['key']]!.text = v ?? '',
+                          )
+                        : TextField(
+                            controller: controllers[field['key']],
+                            keyboardType: field['type'] == 'text'
+                                ? TextInputType.text
+                                : const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                    signed: true,
+                                  ),
+                            decoration: InputDecoration(
+                              labelText: field['label'],
+                            ),
+                          ),
                   ),
               ],
             ),
@@ -529,11 +549,24 @@ extension _GameViews on _WorkspaceState {
                             color: violet.withValues(alpha: .12),
                             borderRadius: BorderRadius.circular(22),
                           ),
-                          child: Icon(
-                            categoryIcon(item['category']),
-                            size: 44,
-                            color: violet,
-                          ),
+                          child: (item['image_url'] ?? '').toString().isNotEmpty
+                              ? Image.network(
+                                  item['image_url'],
+                                  height: 120,
+                                  width: 160,
+                                  fit: BoxFit.contain,
+                                  semanticLabel: item['name'],
+                                  errorBuilder: (_, error, stack) => Icon(
+                                    categoryIcon(item['category']),
+                                    size: 44,
+                                    color: violet,
+                                  ),
+                                )
+                              : Icon(
+                                  categoryIcon(item['category']),
+                                  size: 44,
+                                  color: violet,
+                                ),
                         ),
                         const SizedBox(height: 20),
                         Text(

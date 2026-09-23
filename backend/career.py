@@ -6,6 +6,7 @@ from functools import cmp_to_key
 import math
 
 from .engine import require, Problem, stamp, instant, uid, own
+from .policies import policy
 
 GRADES = ['Junior', 'Middle', 'Senior', 'Lead']
 FORMATS = ['online', 'offline', 'self_paced']
@@ -17,7 +18,8 @@ def goal(s, eid):
     effective = s['goals'].get(eid) or e['source_goal']
     suggestion = None
     if not effective:
-        for grade in GRADES[GRADES.index(e['grade']) + 1:]:
+        grades=[r['grade_id'] for r in sorted(s['roles'].values(),key=lambda r:r.get('rank',GRADES.index(r['grade_id']) if r['grade_id'] in GRADES else 99)) if r['role_id']==e['role'] and r.get('active',True)]
+        for grade in grades[grades.index(e['grade'])+1:] if e['grade'] in grades else []:
             if e['role'] + '|' + grade in s['roles']:
                 suggestion = dict(target_role=e['role'], target_grade=grade)
                 break
@@ -26,11 +28,14 @@ def goal(s, eid):
 
 
 def preferences(s, eid):
-    return s['preferences'].get(eid, {'weekly_minutes': 120, 'preferred_formats': FORMATS, 'timezone': 'Asia/Almaty'})
+    return s['preferences'].get(eid, {'weekly_minutes': 120, 'preferred_formats': FORMATS, 'timezone': policy(s,'settings')['timezone']})
 
 
 def target(s, g):
-    return s['roles'].get(g['target_role'] + '|' + g['target_grade']) if g else None
+    role=deepcopy(s['roles'].get(g['target_role'] + '|' + g['target_grade'])) if g else None
+    if role and policy(s,'recommendations')['strategy']=='unweighted_coverage':
+        for r in role['requirements'].values(): r['weight']=1
+    return role
 
 
 def apply_gains(levels, gains):
@@ -51,12 +56,14 @@ def levels(s, eid):
     e = s['employees'][eid]
     result = dict(e['skills'])
     for c in sorted(s['completions'].values(), key=lambda c: (c['completed_at'], c['id'])):
-        if c['employee_id'] == eid and instant(c['completed_at']) > instant(e['assessment_at']):
-            result = apply_gains(result, c['gains'])
+        if c['employee_id'] == eid:
+            gains={k:v for k,v in c['gains'].items() if instant(c['completed_at']) >
+                   instant(e.get('skill_assessed_at',{}).get(k,e['assessment_at']))}
+            result = apply_gains(result, gains)
     return result
 
 
-def progress(s, eid, chosen_goal=None, extra_ids=()):
+def progress(s, eid, chosen_goal=None, extra_ids=(), extra_activities=()):
     g = chosen_goal if chosen_goal is not None else goal(s, eid)['goal']
     role = target(s, g)
     req = role['requirements'] if role else {}
@@ -64,6 +71,8 @@ def progress(s, eid, chosen_goal=None, extra_ids=()):
     estimated = levels(s, eid)
     for aid in extra_ids:
         estimated = apply_gains(estimated, s['activities'][aid]['gains'])
+    for activity in extra_activities:
+        estimated = apply_gains(estimated, activity['gains'])
     coverage = 100 * sum(base.get(k) is not None for k in req) / len(req) if req else None
     a, b = readiness(base, req), readiness(estimated, req)
     rows = []
@@ -73,12 +82,12 @@ def progress(s, eid, chosen_goal=None, extra_ids=()):
         contributions=[]
         running=base.get(sid)
         for c in sorted(s['completions'].values(),key=lambda c:(c['completed_at'],c['id'])):
-            if c['employee_id']!=eid or not c['gains'].get(sid) or instant(c['completed_at'])<=instant(s['employees'][eid]['assessment_at']):
+            if c['employee_id']!=eid or not c['gains'].get(sid) or instant(c['completed_at'])<=instant(s['employees'][eid].get('skill_assessed_at',{}).get(sid,s['employees'][eid]['assessment_at'])):
                 continue
             raw=c['gains'][sid]
             effective=min(raw,100-running) if running is not None else None
             if running is not None: running+=effective
-            contributions.append(dict(activity_id=c['activity_id'],title=s['activities'][c['activity_id']]['title'],
+            contributions.append(dict(activity_id=c['activity_id'],title=c.get('activity_snapshot',s['activities'][c['activity_id']])['title'],
                 gain=raw,effective_gain=effective,completed_at=c['completed_at'],source='self_report'))
         rows.append(dict(skill_id=sid, name=s['skills'][sid]['name'], assessed_level=base.get(sid),
                          estimated_level=val, required_level=r['level'] if r else None,
@@ -136,17 +145,18 @@ def overlaps(a, b):
 
 def plan(s, eid, now):
     items = active_plan(s, eid)
-    rows = [{**p, 'activity': s['activities'][p['activity_id']],
-             'blocked_reason': blocked(s, eid, s['activities'][p['activity_id']], now, 'forecast', p)} for p in items]
+    rows = [{**p, 'activity': p.get('activity_snapshot',s['activities'][p['activity_id']]),
+             'blocked_reason': blocked(s, eid, p.get('activity_snapshot',s['activities'][p['activity_id']]), now, 'forecast', p)} for p in items]
     minutes = sum(p['activity']['duration_minutes'] for p in rows)
-    forecast_ids = [p['activity_id'] for p in rows if not p['blocked_reason']]
-    return dict(items=rows, total_minutes=minutes,
+    forecast_activities = [p['activity'] for p in rows if not p['blocked_reason']]
+    return dict(items=rows, total_minutes=minutes, max_steps=policy(s,'recommendations')['max_steps'],
                 estimated_weeks=math.ceil(minutes / preferences(s, eid)['weekly_minutes']),
-                forecast=progress(s, eid, extra_ids=forecast_ids),
+                forecast=progress(s, eid, extra_activities=forecast_activities),
                 archived_count=sum(p['employee_id'] == eid and p['status'] == 'archived' for p in s['plan'].values()))
 
 
 def recommendations(s, eid, now):
+    rules=policy(s,'recommendations')
     p = progress(s, eid)
     result = dict(items=[], empty_reason=None, diagnostics={}, progress=p)
     if p['status'] != 'ready':
@@ -156,7 +166,7 @@ def recommendations(s, eid, now):
     if readiness(current, req) >= 100:
         return {**result, 'empty_reason': 'goal_covered'}
     items = active_plan(s, eid)
-    if len(items) >= 3:
+    if len(items) >= rules['max_steps']:
         return {**result, 'empty_reason': 'plan_full'}
     future = dict(current)
     for item in items:
@@ -166,7 +176,7 @@ def recommendations(s, eid, now):
     if readiness(future, req) >= 100:
         return {**result, 'empty_reason': 'plan_covers_goal'}
     prefs = preferences(s, eid)
-    budget = prefs['weekly_minutes'] * 4 - sum(s['activities'][i['activity_id']]['duration_minutes'] for i in items)
+    budget = prefs['weekly_minutes'] * rules['budget_weeks'] - sum(s['activities'][i['activity_id']]['duration_minutes'] for i in items)
     reserved = [s['activities'][p['activity_id']] for p in items]
     hidden = s['exclusions'].get(eid, {}).get(p['goal']['target_role'] + '|' + p['goal']['target_grade'], {})
     diagnostics = Counter()
@@ -177,13 +187,13 @@ def recommendations(s, eid, now):
         left=(-a['sequence_delta_pp'], a['activity']['duration_minutes'], a['activity']['id'])
         right=(-b['sequence_delta_pp'], b['activity']['duration_minutes'], b['activity']['id'])
         return (left>right)-(left<right)
-    while len(chosen) < 3 - len(items) and readiness(future, req) < 100:
+    while len(chosen) < rules['max_steps'] - len(items) and readiness(future, req) < 100:
         candidates = []
         for a in s['activities'].values():
             reason = blocked(s, eid, a, now)
             if a['id'] in [x['id'] for x in reserved]:
                 reason = 'in_plan'
-            if not reason and a['kind'] == 'scheduled' and instant(a['starts_at']) > now + timedelta(days=28):
+            if not reason and a['kind'] == 'scheduled' and instant(a['starts_at']) > now + timedelta(days=rules['horizon_days']):
                 reason = 'outside_horizon'
             if not reason and any(overlaps(a, b) for b in reserved):
                 reason = 'schedule_conflict'
@@ -197,11 +207,11 @@ def recommendations(s, eid, now):
             if reason:
                 diagnostics[reason] += 1
                 continue
-            score = 100 * (.75 * delta / (100 - readiness(future, req)) + .15 * min(1, 60 / a['duration_minutes']) + .1 * (a['format'] in prefs['preferred_formats']))
+            score = 100 * (rules['utility_weight'] * delta / (100 - readiness(future, req)) + rules['duration_weight'] * min(1, 60 / a['duration_minutes']) + rules['format_weight'] * (a['format'] in prefs['preferred_formats']))
             standalone = readiness(apply_gains(current, a['gains']), req) - readiness(current, req)
             candidates.append(dict(activity=a, score=score, standalone_delta_pp=standalone,
                                    sequence_delta_pp=delta, reasons=[f'Закрывает дефициты цели: {p["goal"]["target_role"]} {p["goal"]["target_grade"]}',
-                                   f'Время: {a["duration_minutes"]} мин. В пределах бюджета четырёх недель.']))
+                                   f'Время: {a["duration_minutes"]} мин. В пределах бюджета {rules["budget_weeks"]} недель.']))
         if not candidates:
             break
         item = sorted(candidates, key=cmp_to_key(compare))[0]
@@ -238,11 +248,11 @@ def check_add(s, eid, aid, now, body, ignore_id=None, existing=None):
     reason = blocked(s, eid, a, now, 'forecast' if existing else 'add', existing)
     require(not reason, reason or '', 'Активность сейчас недоступна: ' + (reason or ''))
     others = [p for p in active_plan(s, eid) if p['id'] != ignore_id]
-    require(len(others) < 3, 'PLAN_LIMIT_REACHED', 'В плане может быть не более трёх шагов')
+    require(len(others) < policy(s,'recommendations')['max_steps'], 'PLAN_LIMIT_REACHED', 'Достигнут лимит активных шагов плана')
     require(not any(p['activity_id'] == aid for p in others), 'DUPLICATE_PLAN_ITEM', 'Активность уже в плане')
     require(not any(overlaps(a, s['activities'][p['activity_id']]) for p in others), 'SCHEDULE_CONFLICT', 'Время пересекается с другим шагом')
     total = a['duration_minutes'] + sum(s['activities'][p['activity_id']]['duration_minutes'] for p in others)
-    require(total <= preferences(s, eid)['weekly_minutes'] * 4 or body.get('accept_over_budget'), 'OVER_BUDGET', 'План превышает бюджет четырёх недель. Подтвердите увеличение нагрузки.')
+    require(total <= preferences(s, eid)['weekly_minutes'] * policy(s,'recommendations')['budget_weeks'] or body.get('accept_over_budget'), 'OVER_BUDGET', 'План превышает бюджет времени. Подтвердите увеличение нагрузки.')
     req = (target(s, goal(s, eid)['goal']) or {}).get('requirements', {})
     before, after = readiness(levels(s, eid), req), readiness(apply_gains(levels(s, eid), a['gains']), req)
     require((before is not None and after > before) or body.get('accept_no_goal_gain'), 'NO_GOAL_GAIN', 'Шаг не даёт измеримого вклада в текущую цель. Добавить осознанно?')
@@ -259,7 +269,8 @@ def add_plan(s, eid, body, now, replace_id=None):
         old.update(status='archived', archive_reason='replaced', archived_at=stamp(now))
     key = uid('plan_')
     s['plan'][key] = dict(id=key, employee_id=eid, activity_id=a['id'], position=position,
-                          status='planned', goal=goal(s, eid)['goal'], created_at=stamp(now), started_at=None)
+                          status='planned', goal=goal(s, eid)['goal'], created_at=stamp(now), started_at=None,
+                          activity_snapshot=deepcopy(a),activity_version=a.get('version',1),formula_version=s.get('config_version',1))
     return plan(s, eid, now)
 
 
@@ -276,7 +287,7 @@ def transition(s, eid, pid, action, body, now):
     if action == 'start' and p['status'] == 'in_progress':
         return p
     require(p['status'] == ('planned' if action == 'start' else 'in_progress'), 'INVALID_TRANSITION', 'Недопустимый переход статуса')
-    a = s['activities'][p['activity_id']]
+    a = p.get('activity_snapshot',s['activities'][p['activity_id']])
     reason = blocked(s, eid, a, now, action, p)
     require(not reason, reason or '', 'Действие недоступно: ' + (reason or ''))
     if action == 'start':
@@ -286,7 +297,8 @@ def transition(s, eid, pid, action, body, now):
     before = progress(s, eid)
     key = uid('completion_')
     c = dict(id=key, employee_id=eid, activity_id=a['id'], completed_at=stamp(now),
-             started_at=p['started_at'], gains=deepcopy(a['gains']), note=body.get('note'), source='self_report')
+             started_at=p['started_at'], gains=deepcopy(a['gains']), note=body.get('note'), source='self_report',
+             activity_snapshot=deepcopy(a),activity_version=p.get('activity_version',1))
     s['completions'][key] = c
     p.update(status='completed', completion_id=key)
     return dict(completion=c, before=before, progress=progress(s, eid), already_completed=False,
@@ -327,7 +339,7 @@ def history(s, eid):
 
 def simulate(s, eid, body, now):
     ids = body['activity_ids']
-    require(len(ids) <= 3 and len(ids) == len(set(ids)), 'INVALID_SELECTION', 'Выберите до трёх разных шагов', 422)
+    require(len(ids) <= policy(s,'recommendations')['max_steps'] and len(ids) == len(set(ids)), 'INVALID_SELECTION', 'Превышен лимит шагов или есть повторения', 422)
     chosen = {'target_role': body['role_id'], 'target_grade': body['grade_id']}
     require(target(s, chosen), 'INVALID_GOAL', 'Цель не найдена', 422)
     # Validate the candidate plan independently; retain the statuses of selected current items.
@@ -344,8 +356,8 @@ def simulate(s, eid, body, now):
     result = dict(id=uid('sim_'), employee_id=eid, goal=chosen, activity_ids=ids,
                   before=progress(s, eid, chosen), after=progress(s, eid, chosen, ids),
                   total_minutes=total, estimated_weeks=math.ceil(total / preferences(s, eid)['weekly_minutes']),
-                  over_budget=total > 4 * preferences(s, eid)['weekly_minutes'],
-                  revision=s['revision'], expires_at=stamp(now + timedelta(minutes=15)),
+                  over_budget=total > policy(s,'recommendations')['budget_weeks'] * preferences(s, eid)['weekly_minutes'],
+                  revision=s['revision']+1, expires_at=stamp(now + timedelta(minutes=15)),
                   items=active_plan(temp, eid))
     s['simulations'] = {k: v for k, v in s['simulations'].items() if instant(v['expires_at']) > now}
     s['simulations'][result['id']] = result

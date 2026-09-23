@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import '../core/api.dart';
 import '../widgets/ui.dart';
 import 'login.dart';
+import '../features/admin/admin_shell.dart';
 
 part 'career_views.dart';
 part 'game_views.dart';
@@ -45,7 +46,7 @@ String label(dynamic raw) =>
       'no_goal': 'Выберите карьерную цель',
       'needs_assessment': 'Не хватает оценок для расчёта',
       'goal_covered': 'Расчётные требования цели покрыты',
-      'plan_full': 'В плане уже три шага',
+      'plan_full': 'Достигнут лимит шагов плана',
       'plan_covers_goal': 'Текущего плана достаточно для расчётного покрытия',
       'no_time_fit': 'Нет шагов в вашем бюджете времени',
       'no_available_activities': 'Подходящих активностей пока нет',
@@ -99,14 +100,33 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   );
 
   int listPage = 1, generation = 0;
-  bool loading = false, busy = false;
+  bool loading = false, busy = false, manageMode = false;
   Set<String> simulationIds = {};
   Json? simulation;
   String? simulationRole, simulationGrade;
   Map<String, String> hrFilters = {};
   bool get hr => user?['role'] == 'hr';
+  bool hasPermission(String permission) =>
+      (user?['capabilities'] as List? ?? []).contains(permission);
+  bool get administrator =>
+      ['admin', 'super_admin'].contains(user?['role']) || manageMode;
   String get root => hr ? 'hr' : 'employee';
   String get title => titles[page.split('/').first] ?? 'Подробности';
+  String contentText(String key, String fallback) {
+    final text =
+        records(runtimeConfiguration.value['content']?['entries'])
+            .where((e) => e['key'] == key)
+            .firstOrNull?['value'] ??
+        fallback;
+    final season = data['gamification'] ?? data;
+    return text
+        .toString()
+        .replaceAll('{level}', '${season['level'] ?? 0}')
+        .replaceAll('{xp}', '${season['confirmed_xp'] ?? 0}')
+        .replaceAll('{coins}', '${season['wallet_balance'] ?? 0}')
+        .replaceAll('{season_name}', '${season['season']?['name'] ?? ''}');
+  }
+
   Map<String, String> get titles => hr
       ? {
           'overview': 'Сводка',
@@ -118,17 +138,17 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
           'shop': 'Управление магазином',
         }
       : {
-          'home': 'Мой путь',
-          'plan': 'Мой план',
-          'season': 'Карьерный пропуск',
-          'shop': 'Магазин наград',
-          'catalog': 'Каталог',
-          'history': 'История развития',
-          'profile': 'Мой профиль',
-          'goal': 'Карьерная цель',
-          'skills': 'Навыки',
-          'simulator': 'Что если',
-          'passport': 'Паспорт развития',
+          'home': contentText('home.title', 'Мой путь'),
+          'plan': contentText('plan.title', 'Мой план'),
+          'season': contentText('season.title', 'Карьерный пропуск'),
+          'shop': contentText('shop.title', 'Магазин наград'),
+          'catalog': contentText('catalog.title', 'Каталог'),
+          'history': contentText('history.title', 'История развития'),
+          'profile': contentText('profile.title', 'Мой профиль'),
+          'goal': contentText('goal.title', 'Карьерная цель'),
+          'skills': contentText('skills.title', 'Навыки'),
+          'simulator': contentText('simulator.title', 'Что если'),
+          'passport': contentText('passport.title', 'Паспорт развития'),
           'wallet': 'Кошелёк',
           'rewards': 'Мои подарки',
           'activities': 'Активность',
@@ -173,6 +193,13 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && user != null && !administrator) {
+      reload();
+    }
+  }
+
+  @override
   Future<bool> didPushRouteInformation(
     RouteInformation routeInformation,
   ) async {
@@ -209,12 +236,14 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
   }
 
   Future<void> reload() async {
+    if (administrator || user?['must_change_password'] == true) return;
     final version = ++generation;
     setState(() {
       loading = true;
       error = '';
     });
     try {
+      await api.refreshConfiguration();
       final ref = await api.get('/api/reference');
       final base = hr
           ? <String, dynamic>{}
@@ -659,8 +688,12 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
         onLogin: (u) {
           setState(() {
             user = u;
+            manageMode =
+                (returnRoute ?? '').startsWith('/admin/') &&
+                (u['capabilities'] as List? ?? []).isNotEmpty;
             loginMessage = '';
           });
+          if (administrator || u['must_change_password'] == true) return;
           final route = returnRoute;
           returnRoute = null;
           go(
@@ -671,6 +704,17 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
                 : 'home',
           );
         },
+      );
+    }
+    if (user?['must_change_password'] == true) {
+      return PasswordChangePage(api: api, onDone: logout);
+    }
+    if (administrator) {
+      return AdminShell(
+        api: api,
+        user: user!,
+        onLogout: logout,
+        initialRoute: returnRoute,
       );
     }
     final wide = MediaQuery.sizeOf(context).width >= 1000;
@@ -760,6 +804,21 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
                             onPressed: loading ? null : reload,
                             icon: const Icon(Icons.refresh),
                           ),
+                          if (hr &&
+                              (user?['capabilities'] as List? ?? []).isNotEmpty)
+                            IconButton(
+                              tooltip: 'Администрирование',
+                              icon: const Icon(
+                                Icons.admin_panel_settings_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() => manageMode = true);
+                                SystemNavigator.routeInformationUpdated(
+                                  uri: Uri(path: '/admin/overview'),
+                                  replace: false,
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -774,6 +833,25 @@ class _WorkspaceState extends State<Workspace> with WidgetsBindingObserver {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                if (runtimeConfiguration
+                                        .value['settings']?['maintenance'] ==
+                                    true)
+                                  Notice(
+                                    runtimeConfiguration
+                                            .value['settings']['maintenance_message'] ??
+                                        'Техническое обслуживание',
+                                  ),
+                                if (contentText('rules.notice', '').isNotEmpty)
+                                  Notice(contentText('rules.notice', '')),
+                                if ((runtimeConfiguration
+                                            .value['branding']?['banner'] ??
+                                        '')
+                                    .toString()
+                                    .isNotEmpty)
+                                  Notice(
+                                    runtimeConfiguration
+                                        .value['branding']['banner'],
+                                  ),
                                 if (reference['showcase'] == true)
                                   const Notice(
                                     'Витринный сценарий · синтетическая история игровых дней',

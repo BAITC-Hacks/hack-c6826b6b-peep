@@ -13,6 +13,7 @@ Thumbs.db
 # Local dependencies and generated files
 node_modules/
 .venv/
+.tools/
 venv/
 __pycache__/
 *.py[cod]

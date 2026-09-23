@@ -112,23 +112,41 @@ class Engine:
                 state = initial_state(database, db, clock())
                 seed_game(state, clock())
                 db.execute('INSERT INTO quest_state VALUES (1,?)', (encode(state),))
-
-    @contextmanager
-    def transaction(self):
-        with self.database.connection(write=True) as db:
+            from .policies import initialize
             state = json.loads(db.execute('SELECT payload FROM quest_state WHERE id=1').fetchone()[0])
-            yield state
+            initialize(state)
+            from . import admin_service, admin_schemas
+            for domain in admin_schemas.POLICY_MODELS | admin_schemas.ENTITY_MODELS:
+                if domain in admin_service.COLLECTIONS:
+                    targets=list(state[admin_service.COLLECTIONS[domain]])
+                elif domain=='pass': targets=list(state['seasons'])
+                else: targets=['global']
+                for target in targets:
+                    if not db.execute('SELECT 1 FROM config_versions WHERE domain=? AND target_id=?',(domain,target)).fetchone():
+                        payload=encode(admin_service.current(state,domain,target))
+                        db.execute('INSERT INTO config_versions VALUES (?,?,?,?,?,?,?,?)',
+                                   (uid('config_'),domain,target,1,payload,hashlib.sha256(payload.encode()).hexdigest(),'migration',stamp(clock())))
             db.execute('UPDATE quest_state SET payload=? WHERE id=1', (encode(state),))
 
-    def read(self, function):
+    @contextmanager
+    def transaction(self, include_db=False):
+        with self.database.connection(write=True) as db:
+            state = json.loads(db.execute('SELECT payload FROM quest_state WHERE id=1').fetchone()[0])
+            yield (state, db) if include_db else state
+            db.execute('UPDATE quest_state SET payload=? WHERE id=1', (encode(state),))
+
+    def read(self, function, include_db=False):
         from .game import tick
-        with self.transaction() as s:
+        with self.transaction(include_db=True) as (s, db):
             if tick(s, self.clock()):
                 s['revision'] += 1
-            result = function(s, self.clock())
+            before=encode(s)
+            result = function(s, self.clock(), db) if include_db else function(s, self.clock())
+            if encode(s)!=before:
+                s['revision']+=1
             return {'data': result, 'meta': {'state_revision': s['revision'], 'server_time': stamp(self.clock())}}
 
-    def mutate(self, user, route, body, key, function):
+    def mutate(self, user, route, body, key, function, include_db=False):
         require(key is not None, 'IDEMPOTENCY_REQUIRED', 'Для изменения нужен Idempotency-Key', 422)
         try:
             uuid.UUID(key)
@@ -138,7 +156,7 @@ class Engine:
         lookup = f'{user["username"]}:{route}:{key}'
         # Time transitions are committed separately, even if the action is stale.
         self.read(lambda s, now: None)
-        with self.transaction() as s:
+        with self.transaction(include_db=True) as (s, db):
             previous = s['idempotency'].get(lookup)
             if previous:
                 require(previous['hash'] == signature, 'IDEMPOTENCY_CONFLICT', 'Ключ уже использован для другого действия')
@@ -146,8 +164,8 @@ class Engine:
             require(body.get('expected_revision') == s['revision'], 'STALE_STATE',
                     'Данные изменились. Обновите экран и повторите действие.', current_revision=s['revision'])
             before = encode(s)
-            result = function(s, self.clock())
-            if encode(s) != before:
+            result = function(s, self.clock(), db) if include_db else function(s, self.clock())
+            if encode(s) != before or include_db:
                 s['revision'] += 1
                 s['audit'].append({'at': stamp(self.clock()), 'actor': user['username'], 'action': route,
                                    'revision': s['revision']})

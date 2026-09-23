@@ -135,7 +135,12 @@ def fund(s,ss,eid,now):
 
 
 def test_shop_concurrency_snapshot_stock_and_refund(scenario):
-    c,e,clock=scenario;h=authorization(c);other=authorization(c,'colleague');hr=authorization(c,'hr')
+    c,e,clock=scenario
+    # Legacy HR catalog operations now require explicit administrative grants.
+    with c.app.state.db.connection(write=True) as db:
+        for permission in ('shop.manage','stock.manage'):
+            db.execute('INSERT INTO permission_grants VALUES (?,?,?,?)',('hr.demo',permission,'test',stamp(clock[0])))
+    h=authorization(c);other=authorization(c,'colleague');hr=authorization(c,'hr')
     with e.transaction() as s:
         ss=season(s)
         for eid in ['E1','E2']:fund(s,ss,eid,clock[0])

@@ -5,6 +5,8 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+final runtimeConfiguration = ValueNotifier<Map<String, dynamic>>({});
+
 class CareerApi {
   CareerApi({http.Client? client, String? baseUrl})
     : _client = client ?? http.Client(),
@@ -17,6 +19,13 @@ class CareerApi {
   int stateRevision = 0;
   final Map<String, String> _pendingKeys = {};
   VoidCallback? onUnauthorized;
+  Future<void> refreshConfiguration() async {
+    final value = await get('/api/runtime-config');
+    if (value['config_version'] !=
+        runtimeConfiguration.value['config_version']) {
+      runtimeConfiguration.value = value;
+    }
+  }
 
   Uri _uri(String path) {
     final origin = baseUrl.isNotEmpty ? baseUrl : _defaultOrigin();
@@ -48,7 +57,9 @@ class CareerApi {
         method != 'GET' &&
         !path.startsWith('/api/auth/') &&
         path != '/api/me/simulations' &&
-        path != '/api/me/assistant/explain';
+        path != '/api/me/assistant/explain' &&
+        !(path.startsWith('/api/admin/') &&
+            (path.endsWith('/simulate') || path.endsWith('/test')));
     final payload = body == null
         ? <String, dynamic>{}
         : Map<String, dynamic>.from(body);
@@ -97,6 +108,23 @@ class CareerApi {
       throw ApiException('Не удалось скачать файл', response.statusCode);
     }
     return response.bodyBytes;
+  }
+
+  Future<Map<String, dynamic>> uploadImage(
+    Uint8List bytes,
+    String name,
+    String alt,
+  ) async {
+    final request = http.MultipartRequest('POST', _uri('/api/admin/media'));
+    request.headers.addAll({
+      if (token != null) 'Authorization': 'Bearer $token',
+      'Idempotency-Key': _uuid(),
+    });
+    request.fields.addAll({'expected_revision': '$stateRevision', 'alt': alt});
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: name),
+    );
+    return _send(request);
   }
 
   Future<Map<String, dynamic>> login(String username, String password) async {

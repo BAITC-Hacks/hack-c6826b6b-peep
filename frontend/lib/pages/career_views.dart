@@ -831,6 +831,16 @@ extension _CareerViews on _WorkspaceState {
               ),
               const SizedBox(height: 16),
               Text(a['description']),
+              if ((a['image_url'] ?? '').toString().isNotEmpty)
+                Image.network(
+                  a['image_url'],
+                  height: 180,
+                  fit: BoxFit.contain,
+                  semanticLabel: a['title'],
+                  errorBuilder: (_, error, stack) => const SizedBox.shrink(),
+                ),
+              if ((a['external_url'] ?? '').toString().isNotEmpty)
+                SelectableText('Материал: ${a['external_url']}'),
               const SizedBox(height: 20),
               Text('Результат: ${a['outcome']}'),
               const SizedBox(height: 16),

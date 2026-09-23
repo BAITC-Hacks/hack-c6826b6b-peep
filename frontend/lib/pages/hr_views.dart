@@ -463,14 +463,15 @@ extension _HrViews on _WorkspaceState {
         'Каталог наград',
         'Изменения влияют на будущие заказы. Подтверждённые цены и комплектация сохраняются.',
       ),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: button(
-          'Добавить награду',
-          () => editProduct(null),
-          primary: true,
+      if (hasPermission('shop.manage') && hasPermission('stock.manage'))
+        Align(
+          alignment: Alignment.centerLeft,
+          child: button(
+            'Добавить награду',
+            () => editProduct(null),
+            primary: true,
+          ),
         ),
-      ),
       const SizedBox(height: 20),
       for (final item in records(data['items']))
         card(
@@ -489,15 +490,18 @@ extension _HrViews on _WorkspaceState {
               ),
               const SizedBox(height: 16),
               actions([
-                button('Редактировать', () => editProduct(item)),
-                button(
-                  item['active'] == true ? 'Скрыть' : 'Показать',
-                  () => act(
-                    'PATCH',
-                    '/api/hr/shop/items/${segment(item['id'])}',
-                    {'active': item['active'] != true},
+                if (hasPermission('shop.manage') &&
+                    hasPermission('stock.manage'))
+                  button('Редактировать', () => editProduct(item)),
+                if (hasPermission('shop.manage'))
+                  button(
+                    item['active'] == true ? 'Скрыть' : 'Показать',
+                    () => act(
+                      'PATCH',
+                      '/api/hr/shop/items/${segment(item['id'])}',
+                      {'active': item['active'] != true},
+                    ),
                   ),
-                ),
               ]),
             ],
           ),
@@ -542,7 +546,8 @@ extension _HrViews on _WorkspaceState {
           'Сезон с понятными правилами',
           'Виртуальный бюджет учитывает монеты, права на подарки, заявки и выданные награды отдельно.',
         ),
-        actions([button('Создать сезон', createSeason, primary: true)]),
+        if (hasPermission('seasons.manage'))
+          actions([button('Создать сезон', createSeason, primary: true)]),
         const SizedBox(height: 20),
         if (records(data['items']).isNotEmpty)
           select(
@@ -574,9 +579,11 @@ extension _HrViews on _WorkspaceState {
                     'Рейтинг и итоги',
                     () => go('gamification/${selected['id']}/leaderboard'),
                   ),
-                  if (selected['status'] == 'draft')
+                  if (selected['status'] == 'draft' &&
+                      hasPermission('seasons.manage'))
                     button('Изменить участников', () => editRoster(selected)),
-                  if (selected['status'] == 'draft')
+                  if (selected['status'] == 'draft' &&
+                      hasPermission('seasons.publish'))
                     button('Опубликовать сезон', () async {
                       if (await confirm(
                         'Зафиксировать правила сезона?',
@@ -588,8 +595,9 @@ extension _HrViews on _WorkspaceState {
                         );
                       }
                     }, primary: true),
-                  if (selected['status'] == 'draft' ||
-                      selected['status'] == 'scheduled')
+                  if ((selected['status'] == 'draft' ||
+                          selected['status'] == 'scheduled') &&
+                      hasPermission('seasons.manage'))
                     button('Изменить сезон', () => editSeason(selected)),
                 ]),
               ],
@@ -612,9 +620,9 @@ extension _HrViews on _WorkspaceState {
           const SizedBox(height: 24),
           card(
             'Правила экономики',
-            const Text(
-              '100 уровней по 200 XP. За полный пропуск — 4 800 CQ, 20 основных подарков и 11 мини-подарков. Максимум на участника — 1 200 000 ₸ виртуального бюджета.\n\nМонеты не выводятся в деньги. Игровой рейтинг не заменяет оценку профессиональных результатов.',
-              style: TextStyle(height: 1.8),
+            Text(
+              'Максимум на участника — ${economy['max_per_member_kzt']} ₸ виртуального бюджета. Уровни и награды определяет опубликованная версия пропуска.\n\nМонеты не выводятся в деньги. Игровой рейтинг не заменяет оценку профессиональных результатов.',
+              style: const TextStyle(height: 1.8),
             ),
           ),
           heading(
@@ -631,7 +639,8 @@ extension _HrViews on _WorkspaceState {
                     '${(pool['item_ids'] as List).length} вариантов · ${pool['code']}',
                   ),
                   const SizedBox(height: 12),
-                  button('Дополнить варианты', () => editPool(pool)),
+                  if (hasPermission('shop.manage'))
+                    button('Дополнить варианты', () => editPool(pool)),
                 ],
               ),
             ),

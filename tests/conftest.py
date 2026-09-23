@@ -14,6 +14,8 @@ def local_credentials(monkeypatch):
     monkeypatch.setenv('DEMO_EMPLOYEE_PASSWORD','Employee123!')
     monkeypatch.setenv('DEMO_COLLEAGUE_PASSWORD','Colleague123!')
     monkeypatch.setenv('DEMO_HR_PASSWORD','Hr123!')
+    monkeypatch.setenv('DEMO_ADMIN_PASSWORD','AdminTest123!')
+    monkeypatch.setenv('DEMO_SUPERADMIN_PASSWORD','SuperTest123!')
     monkeypatch.setenv('AI_MODE','template')
 
 

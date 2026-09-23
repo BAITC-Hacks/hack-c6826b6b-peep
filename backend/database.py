@@ -60,6 +60,46 @@ class Database:
                     expires_at INTEGER NOT NULL, consumed INTEGER NOT NULL DEFAULT 0
                 );
             ''')
+        self.migrate_admin()
+
+    def migrate_admin(self):
+        # Rebuild only the constrained account table; keep usernames and all FK children.
+        db = sqlite3.connect(self.path, timeout=10)
+        try:
+            db.execute('PRAGMA foreign_keys=OFF')
+            db.execute('BEGIN IMMEDIATE')
+            db.execute('CREATE TABLE IF NOT EXISTS employee_identities(employee_id TEXT PRIMARY KEY)')
+            db.execute('INSERT OR IGNORE INTO employee_identities SELECT employee_id FROM employee_records')
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='quest_state'").fetchone():
+                saved=db.execute('SELECT payload FROM quest_state WHERE id=1').fetchone()
+                if saved:
+                    for eid in json.loads(saved[0])['employees']:
+                        db.execute('INSERT OR IGNORE INTO employee_identities VALUES (?)',(eid,))
+            sql = db.execute("SELECT sql FROM sqlite_master WHERE name='accounts'").fetchone()[0]
+            if 'super_admin' not in sql or 'employee_identities' not in sql:
+                modern='super_admin' in sql
+                db.execute('''CREATE TABLE accounts_admin (
+                    username TEXT PRIMARY KEY, password_hash TEXT NOT NULL, salt TEXT NOT NULL,
+                    role TEXT NOT NULL CHECK(role IN ('employee','hr','admin','super_admin')),
+                    employee_id TEXT, display_name TEXT NOT NULL,
+                    active INTEGER NOT NULL DEFAULT 1, must_change_password INTEGER NOT NULL DEFAULT 0,
+                    entity_version INTEGER NOT NULL DEFAULT 1,
+                    FOREIGN KEY(employee_id) REFERENCES employee_identities(employee_id))''')
+                columns='username,password_hash,salt,role,employee_id,display_name'+(',active,must_change_password,entity_version' if modern else '')
+                db.execute(f'INSERT INTO accounts_admin({columns}) SELECT {columns} FROM accounts')
+                db.execute('DROP TABLE accounts')
+                db.execute('ALTER TABLE accounts_admin RENAME TO accounts')
+            if db.execute('PRAGMA foreign_key_check').fetchall():
+                raise ValueError('Account migration foreign key check failed')
+            db.commit()
+            db.executescript((Path(__file__).parent/'migrations/003_admin_control.sql').read_text(encoding='utf-8'))
+            db.execute('INSERT OR IGNORE INTO schema_migrations VALUES(4,CURRENT_TIMESTAMP)')
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
 
     @contextmanager
     def connection(self, write=False):
@@ -102,6 +142,7 @@ class Database:
             payload = encode(employee)
             db.execute('INSERT INTO employee_records VALUES (?,?,?) ON CONFLICT(employee_id) DO UPDATE SET source_json=excluded.source_json',
                        (employee['employee_id'], payload, payload))
+            db.execute('INSERT OR IGNORE INTO employee_identities VALUES (?)',(employee['employee_id'],))
         for record in raw['activity_history']:
             payload = encode(record)
             db.execute('INSERT INTO history_records VALUES (?,?,?,?) ON CONFLICT(record_id) DO UPDATE SET employee_id=excluded.employee_id,source_json=excluded.source_json',
@@ -115,7 +156,9 @@ class Database:
     def ensure_accounts(self):
         with self.connection(write=True) as db:
             ids = [row[0] for row in db.execute('SELECT employee_id FROM employee_records ORDER BY employee_id LIMIT 2')]
-            accounts = [('hr.demo', 'DEMO_HR_PASSWORD', 'hr', None, 'HR-команда')]
+            accounts = [('hr.demo', 'DEMO_HR_PASSWORD', 'hr', None, 'HR-команда'),
+                        ('admin.demo', 'DEMO_ADMIN_PASSWORD', 'admin', None, 'Администратор'),
+                        ('superadmin.demo', 'DEMO_SUPERADMIN_PASSWORD', 'super_admin', None, 'Системный администратор')]
             if ids:
                 accounts.append(('employee.demo', 'DEMO_EMPLOYEE_PASSWORD', 'employee', ids[0], 'Сотрудник'))
             if len(ids) > 1:
@@ -127,23 +170,34 @@ class Database:
                 if not os.getenv(setting):
                     print(f'New local account {username}: {password} (shown once; keep locally)', flush=True)
                 salt = secrets.token_hex(16)
-                db.execute('INSERT INTO accounts VALUES (?,?,?,?,?,?)',
+                db.execute('INSERT INTO accounts(username,password_hash,salt,role,employee_id,display_name) VALUES (?,?,?,?,?,?)',
                            (username, password_hash(password, salt), salt, role, employee_id, display_name))
 
-    @staticmethod
-    def public_user(row):
-        return {key: row[key] for key in ('username', 'role', 'employee_id', 'display_name')}
+    def public_user(self, row, db=None):
+        if db is None:
+            with self.connection() as db:
+                return self.public_user(row, db)
+        from .permissions import capabilities
+        grants = [r[0] for r in db.execute('SELECT permission FROM permission_grants WHERE username=?', (row['username'],))]
+        return {key: row[key] for key in ('username', 'role', 'employee_id', 'display_name')} | {
+            'capabilities': capabilities(row['role'], grants), 'must_change_password': bool(row['must_change_password'])}
 
     def login(self, username, password):
         with self.connection() as db:
             row = db.execute('SELECT * FROM accounts WHERE username=?', (username,)).fetchone()
         # Same slow hash path for unknown usernames; avoid a cheap username timing oracle.
         candidate = password_hash(password, row['salt'] if row else 'unknown-account')
-        if row is None or not hmac.compare_digest(candidate, row['password_hash']):
+        if row is None or not row['active'] or not hmac.compare_digest(candidate, row['password_hash']):
             return None
         token = secrets.token_urlsafe(32)
         expires = int(time.time()) + 8 * 60 * 60
         with self.connection(write=True) as db:
+            fresh = db.execute('SELECT * FROM accounts WHERE username=?', (username,)).fetchone()
+            if not fresh or not fresh['active'] or fresh['password_hash'] != row['password_hash']:
+                return None
+            state = db.execute('SELECT payload FROM quest_state WHERE id=1').fetchone() if db.execute("SELECT 1 FROM sqlite_master WHERE name='quest_state'").fetchone() else None
+            hours = json.loads(state[0]).get('policies', {}).get('settings', {}).get('session_hours', 8) if state else 8
+            expires = int(time.time()) + hours * 3600
             db.execute('DELETE FROM sessions WHERE expires_at<=?', (int(time.time()),))
             db.execute('INSERT INTO sessions VALUES (?,?,?)',
                        (hashlib.sha256(token.encode()).hexdigest(), username, expires))
@@ -154,9 +208,9 @@ class Database:
             return None
         with self.connection() as db:
             row = db.execute('''SELECT accounts.* FROM sessions JOIN accounts USING(username)
-                                WHERE token_hash=? AND expires_at>?''',
+                                WHERE token_hash=? AND expires_at>? AND accounts.active=1''',
                              (hashlib.sha256(token.encode()).hexdigest(), int(time.time()))).fetchone()
-            return self.public_user(row) if row else None
+            return self.public_user(row, db) if row else None
 
     def logout(self, token):
         with self.connection(write=True) as db:

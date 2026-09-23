@@ -99,9 +99,15 @@ def create_app(data_dir=None,db_path=None,web_dir=None,clock=utcnow):
         logger.error('Request failed id=%s type=%s',request.state.request_id,type(exc).__name__)
         return error(request,'SERVICE_ERROR','Не удалось выполнить действие. Попробуйте ещё раз.',500)
 
-    def current_user(credentials:HTTPAuthorizationCredentials|None=Depends(bearer)):
+    def current_user(request:Request,credentials:HTTPAuthorizationCredentials|None=Depends(bearer)):
         user=app.state.db.session(credentials.credentials) if credentials else None
         if user is None: raise HTTPException(401,'Войдите в аккаунт заново',headers={'WWW-Authenticate':'Bearer'})
+        if user.get('must_change_password') and request.url.path not in ('/api/auth/me','/api/auth/logout','/api/auth/password'):
+            raise HTTPException(403,'Сначала смените временный пароль')
+        if request.method not in ('GET','HEAD') and not request.url.path.startswith(('/api/admin/','/api/auth/')):
+            from .policies import policy
+            settings=app.state.engine.read(lambda s,n:policy(s,'settings'))['data'] if app.state.engine else {}
+            if settings.get('maintenance'): raise Problem('MAINTENANCE',settings['maintenance_message'],503)
         return user
 
     def hr(user=Depends(current_user)):
@@ -140,7 +146,24 @@ def create_app(data_dir=None,db_path=None,web_dir=None,clock=utcnow):
         app.state.db.logout(credentials.credentials)
         return {'logged_out':True}
 
+    from .admin_schemas import PasswordChange
+    @app.post('/api/auth/password')
+    def change_password(body:PasswordChange,user=Depends(current_user)):
+        import hmac, secrets
+        from .database import password_hash
+        with app.state.db.connection(write=True) as db:
+            row=db.execute('SELECT * FROM accounts WHERE username=?',(user['username'],)).fetchone()
+            if not hmac.compare_digest(password_hash(body.current_password,row['salt']),row['password_hash']):
+                raise HTTPException(403,'Текущий пароль неверен')
+            salt=secrets.token_hex(16)
+            db.execute('UPDATE accounts SET password_hash=?,salt=?,must_change_password=0,entity_version=entity_version+1 WHERE username=?',
+                       (password_hash(body.new_password,salt),salt,user['username']))
+            db.execute('DELETE FROM sessions WHERE username=?',(user['username'],))
+        return dict(changed=True,login_required=True)
+
     install(app,current_user,employee,hr)
+    from .admin_api import install as install_admin
+    install_admin(app,current_user)
 
     @app.get('/api/employees/{eid}')
     def old_profile(eid:str,user=Depends(current_user)):
@@ -155,7 +178,16 @@ def create_app(data_dir=None,db_path=None,web_dir=None,clock=utcnow):
     def unknown_api(path:str): raise HTTPException(404,'API не найден')
 
     web=Path(web_dir) if web_dir else ROOT/'frontend/build/web'
-    if web.is_dir(): app.mount('/',StaticFiles(directory=web,html=True),name='web')
+    if web.is_dir():
+        from starlette.exceptions import HTTPException as StarletteHTTPException
+        class SPAFiles(StaticFiles):
+            async def get_response(self,path,scope):
+                try: return await super().get_response(path,scope)
+                except StarletteHTTPException as exc:
+                    if exc.status_code==404 and path.split('/')[0] in ('admin','employee','hr','login'):
+                        return await super().get_response('index.html',scope)
+                    raise
+        app.mount('/',SPAFiles(directory=web,html=True),name='web')
     return app
 
 
