@@ -46,3 +46,9 @@
 Финальный промпт:
 
 > Original cinematic website hero illustration, portrait 4:5. Violet-blue mountain at twilight, luminous pink winding path to summit star, small backpack traveler seen from behind in lower foreground, distant modern Kazakh city, pine trees and starry navy sky with magenta aurora. Summit toward upper right; upper left 45% dark and uncluttered for headline. Palette midnight navy #080d25, indigo, periwinkle, violet and warm pink. Sophisticated painterly realism. No text, logos, UI, cards or watermark.
+
+## Проверка реализации
+
+23 сентября 2026: прошли 10 существующих Flutter-тестов, анализ и release-сборка Web. При проверке исправлены переполнения заголовка входа и шага импорта на 320 px, а также слой Material для корректной реакции карточек на нажатие.
+
+Собранное приложение проверено во встроенном браузере: вход и выход сотрудника/HR, профиль и история, диалог цели без изменения данных, поиск сотрудника, выбор локальных JSON/CSV и предпросмотр импорта. Проверены широкие экраны 1280/1440 px, обычное окно и мобильная ширина 390 px. В журнале браузера ошибок нет. Пакет импорта не подтверждался, рабочие профили и история не менялись.
