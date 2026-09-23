@@ -20,11 +20,13 @@ class SeasonProgressCard extends StatelessWidget {
     this.onOpenPass,
     required this.onRewards,
     this.compact = false,
+    this.featured = false,
   });
   final Json summary;
   final VoidCallback? onOpenPass;
   final VoidCallback onRewards;
   final bool compact;
+  final bool featured;
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +37,30 @@ class SeasonProgressCard extends StatelessWidget {
     final progress = maxed ? 1.0 : ((200 - remaining) / 200).clamp(0.0, 1.0);
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(featured ? 28 : 22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF26345E), Color(0xFF211E42), panel],
+          colors: featured
+              ? const [Color(0xFF2D3C70), Color(0xFF29214D), Color(0xFF17213B)]
+              : const [Color(0xFF26345E), Color(0xFF211E42), panel],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: violet.withValues(alpha: .35)),
+        border: Border.all(
+          color: featured
+              ? _gold.withValues(alpha: .34)
+              : violet.withValues(alpha: .35),
+        ),
+        boxShadow: featured
+            ? [
+                BoxShadow(
+                  color: violet.withValues(alpha: .14),
+                  blurRadius: 34,
+                  offset: const Offset(0, 14),
+                ),
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -51,23 +68,65 @@ class SeasonProgressCard extends StatelessWidget {
           if (!compact) ...[
             Row(
               children: [
-                const Icon(Icons.auto_awesome_rounded, size: 16, color: _gold),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    value(summary['season']?['name'], 'Твой сезон'),
-                    style: const TextStyle(
-                      color: violet,
-                      fontWeight: FontWeight.w600,
-                    ),
+                Container(
+                  width: featured ? 42 : 30,
+                  height: featured ? 42 : 30,
+                  decoration: BoxDecoration(
+                    color: _gold.withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(featured ? 14 : 10),
+                    border: Border.all(color: _gold.withValues(alpha: .22)),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 17,
+                    color: _gold,
                   ),
                 ),
-                const Text(
-                  '100 УРОВНЕЙ',
-                  style: TextStyle(
-                    color: muted,
-                    fontSize: 10,
-                    letterSpacing: 1.2,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        featured ? 'КАРЬЕРНЫЙ ПРОПУСК' : 'ТВОЙ СЕЗОН',
+                        style: const TextStyle(
+                          color: _gold,
+                          fontSize: 9,
+                          letterSpacing: 1.35,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        value(summary['season']?['name'], 'Твой сезон'),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: ink,
+                          fontSize: featured ? 16 : 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: night.withValues(alpha: .28),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: line.withValues(alpha: .65)),
+                  ),
+                  child: const Text(
+                    '100 УРОВНЕЙ',
+                    style: TextStyle(
+                      color: muted,
+                      fontSize: 9,
+                      letterSpacing: 1,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],

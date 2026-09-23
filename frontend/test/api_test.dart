@@ -96,6 +96,31 @@ void main() {
     expect(api.token, 'session');
   });
   test(
+    'Assistant requests are read-only and carry no mutation headers',
+    () async {
+      final api = CareerApi(
+        baseUrl: 'http://test',
+        client: MockClient((request) async {
+          expect(request.headers['Idempotency-Key'], isNull);
+          expect(jsonDecode(request.body), {'focus': 'balanced'});
+          return http.Response(
+            '{"data":{"mode":"template"},"meta":{"state_revision":4}}',
+            200,
+          );
+        }),
+      );
+      addTearDown(api.dispose);
+      api.token = 'session';
+      api.stateRevision = 4;
+      expect(
+        await api.request('POST', '/api/me/assistant/plan', {
+          'focus': 'balanced',
+        }),
+        {'mode': 'template'},
+      );
+    },
+  );
+  test(
     'Network retry preserves UUID and original body across refreshed revision',
     () async {
       var calls = 0;

@@ -1,5 +1,6 @@
 """Authenticated HTTP contracts for the full local release. No upload endpoints."""
 from datetime import date, timedelta
+import os
 from typing import Literal
 from urllib.parse import quote
 
@@ -8,7 +9,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import career, game, analytics
-from .assistant import CareerAssistant, context_for
+from .assistant import CareerAssistant, context_for, plan_context_for
 from .engine import require, Problem, own, stamp, instant
 
 
@@ -65,6 +66,10 @@ class ApplyInput(Revision):
 
 class ExplainInput(Input):
     question:Literal['why','time','forecast','gaps']
+
+
+class PlanDraftInput(Input):
+    focus:Literal['balanced','quick','impact']='balanced'
 
 
 class AttemptInput(Revision):
@@ -329,6 +334,18 @@ def install(app,current_user,employee,hr):
         result=read(lambda s,n:context_for(s,user['employee_id'],n,body.question))
         answer=await assistant.explain(result['data'],user['employee_id'],result['meta']['state_revision'])
         return {'data':answer,'meta':result['meta']}
+
+    @app.get('/api/me/assistant/status')
+    def assistant_status(user=Depends(employee)):
+        configured=os.getenv('AI_MODE')=='llm' and bool(os.getenv('OPENAI_API_KEY'))
+        return dict(configured=configured,provider='OpenAI',model=os.getenv('OPENAI_MODEL','gpt-4o-mini'),
+                    features=['explanations','plan_builder'],fallback='local')
+
+    @app.post('/api/me/assistant/plan')
+    async def assistant_plan(body:PlanDraftInput,user=Depends(employee)):
+        result=read(lambda s,n:plan_context_for(s,user['employee_id'],n,body.focus))
+        draft=await assistant.compose_plan(result['data'],user['employee_id'],result['meta']['state_revision'])
+        return {'data':draft,'meta':result['meta']}
 
     def hr_filters(department:str|None=None,role_id:str|None=None,grade_id:str|None=None,date_from:date|None=None,date_to:date|None=None,
                    reference:Literal['current_role','goal']='current_role',basis:Literal['assessed','estimated']='assessed'):

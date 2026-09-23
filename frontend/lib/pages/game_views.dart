@@ -5,6 +5,7 @@ extension _GameViews on _WorkspaceState {
   Widget seasonSummary(Json s) => SeasonProgressCard(
     summary: s,
     compact: page == 'season' && seasonTab == 'pass',
+    featured: page == 'home',
     onOpenPass: page == 'season' && seasonTab == 'pass'
         ? null
         : () {

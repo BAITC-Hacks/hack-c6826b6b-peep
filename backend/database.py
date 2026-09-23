@@ -115,17 +115,15 @@ class Database:
     def ensure_accounts(self):
         with self.connection(write=True) as db:
             ids = [row[0] for row in db.execute('SELECT employee_id FROM employee_records ORDER BY employee_id LIMIT 2')]
-            accounts = [('hr.demo', 'DEMO_HR_PASSWORD', 'hr', None, 'HR-команда')]
+            accounts = [('hr.demo', 'DEMO_HR_PASSWORD', 'Hr123!', 'hr', None, 'HR-команда')]
             if ids:
-                accounts.append(('employee.demo', 'DEMO_EMPLOYEE_PASSWORD', 'employee', ids[0], 'Сотрудник'))
+                accounts.append(('employee.demo', 'DEMO_EMPLOYEE_PASSWORD', 'Employee123!', 'employee', ids[0], 'Сотрудник'))
             if len(ids) > 1:
-                accounts.append(('colleague.demo', 'DEMO_COLLEAGUE_PASSWORD', 'employee', ids[1], 'Коллега'))
-            for username, setting, role, employee_id, display_name in accounts:
+                accounts.append(('colleague.demo', 'DEMO_COLLEAGUE_PASSWORD', 'Colleague123!', 'employee', ids[1], 'Коллега'))
+            for username, setting, default_password, role, employee_id, display_name in accounts:
                 if db.execute('SELECT 1 FROM accounts WHERE username=?', (username,)).fetchone():
                     continue
-                password = os.getenv(setting) or secrets.token_urlsafe(15)
-                if not os.getenv(setting):
-                    print(f'New local account {username}: {password} (shown once; keep locally)', flush=True)
+                password = os.getenv(setting) or default_password
                 salt = secrets.token_hex(16)
                 db.execute('INSERT INTO accounts VALUES (?,?,?,?,?,?)',
                            (username, password_hash(password, salt), salt, role, employee_id, display_name))

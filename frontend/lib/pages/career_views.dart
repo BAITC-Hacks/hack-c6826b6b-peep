@@ -52,111 +52,377 @@ extension _CareerViews on _WorkspaceState {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        heading(
-          'Твой следующий шаг, ${value(e['full_name']).split(' ').first}',
-          '${value(e['role'])} · ${value(e['grade'])}',
-        ),
-        card(
-          g.isEmpty
-              ? 'Куда ты хочешь прийти?'
-              : 'Твоя цель: ${g['target_role']} · ${g['target_grade']}',
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (g.isEmpty && data['suggested_goal'] != null)
-                Text(
-                  'Возможное направление: ${data['suggested_goal']['target_role']} ${data['suggested_goal']['target_grade']}. Предложение станет целью после сохранения.',
-                ),
-              if (g.isNotEmpty)
-                Text(
-                  data['goal_source'] == 'personal'
-                      ? 'Личная цель'
-                      : 'Цель из профиля',
-                  style: const TextStyle(color: muted),
-                ),
-              const SizedBox(height: 18),
-              actions([
-                button(
-                  g.isEmpty ? 'Выбрать цель' : 'Изменить цель',
-                  () => go('goal'),
-                  primary: true,
-                ),
-                button('Что если', () => go('simulator')),
-              ]),
-            ],
-          ),
-        ),
-        progressSummary(p),
         if (data['gamification'] != null)
           seasonSummary(map(data['gamification'])),
-        if (records(saved['items']).isNotEmpty)
-          card(
-            'Продолжи свой маршрут',
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  saved['items'][0]['activity']['title'],
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                button('Продолжить шаг', () => go('plan'), primary: true),
-              ],
-            ),
-          ),
         heading(
-          'Подобрано для твоей цели',
-          'Проверяем требования, время и пользу каждого шага.',
+          'Привет, ${value(e['full_name']).split(' ').first}',
+          '${value(e['role'])} · ${value(e['grade'])} · здесь только самое важное',
+        ),
+        journeyGuide(g, saved, rec),
+        if (g.isNotEmpty) goalOverview(g, data['goal_source'] == 'personal'),
+        progressSummary(p),
+        heading(
+          'Рекомендуемые шаги',
+          'Показываем не больше трёх вариантов и объясняем пользу каждого.',
         ),
         if (records(rec['items']).isEmpty)
           card('', Text(label(rec['empty_reason']))),
         for (final r in records(rec['items']))
           activityCard(map(r['activity']), recommendation: r),
         actions([
-          button('Открыть каталог', () => go('catalog')),
-          button(
-            'Вернуть скрытые варианты',
-            () => act(
-              'DELETE',
-              '/api/me/recommendation-exclusions?expected_revision=${api.stateRevision}',
+          button('Все активности', () => go('catalog')),
+          button('OpenAI-помощник', () => go('assistant')),
+          if (rec['empty_reason'] == 'all_candidates_hidden')
+            button(
+              'Вернуть скрытые варианты',
+              () => act(
+                'DELETE',
+                '/api/me/recommendation-exclusions?expected_revision=${api.stateRevision}',
+              ),
             ),
-          ),
-          button('Объяснить рекомендации', () => go('assistant')),
-          button('Паспорт развития', () => go('passport')),
         ]),
       ],
     );
   }
 
-  Widget progressSummary(Json p) => card(
-    'Соответствие цели',
-    Column(
+  Widget goalOverview(Json goal, bool personal) => Container(
+    margin: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          blue.withValues(alpha: .13),
+          const Color(0xFF17213E),
+          violet.withValues(alpha: .08),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(25),
+      border: Border.all(color: blue.withValues(alpha: .28)),
+      boxShadow: [
+        BoxShadow(
+          color: blue.withValues(alpha: .06),
+          blurRadius: 24,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    ),
+    child: LayoutBuilder(
+      builder: (context, box) {
+        final compact = box.maxWidth < 680;
+        final details = Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: blue.withValues(alpha: .13),
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(color: blue.withValues(alpha: .25)),
+              ),
+              child: const Icon(Icons.explore_rounded, color: blue, size: 27),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ТВОЁ НАПРАВЛЕНИЕ',
+                    style: TextStyle(
+                      color: cyan,
+                      fontSize: 9,
+                      letterSpacing: 1.35,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${goal['target_role']} · ${goal['target_grade']}',
+                    style: const TextStyle(
+                      color: ink,
+                      fontSize: 21,
+                      height: 1.3,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    personal
+                        ? 'Направление выбрано тобой и его можно изменить.'
+                        : 'Направление предложено на основе текущего профиля.',
+                    style: const TextStyle(color: muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+        final controls = actions([
+          button('Изменить', () => go('goal')),
+          button('Примерить другую цель', () => go('simulator')),
+        ]);
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [details, const SizedBox(height: 20), controls],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: details),
+            const SizedBox(width: 24),
+            controls,
+          ],
+        );
+      },
+    ),
+  );
+
+  Widget journeyGuide(Json goal, Json saved, Json recommendations) {
+    final planItems = records(saved['items']);
+    final hasGoal = goal.isNotEmpty;
+    final hasPlan = planItems.isNotEmpty;
+    final hasAction = planItems.any(
+      (item) => ['in_progress', 'completed'].contains(item['status']),
+    );
+    final step = !hasGoal
+        ? 0
+        : !hasPlan
+        ? 1
+        : 2;
+    final title = switch (step) {
+      0 => 'Сначала выбери направление',
+      1 => 'Добавь первый шаг в маршрут',
+      _ =>
+        hasAction
+            ? 'Продолжи начатый шаг'
+            : 'Маршрут готов — начни с первого шага',
+    };
+    final description = switch (step) {
+      0 => 'Это займёт минуту: выбери роль и уровень, к которым хочешь двигаться. Решение можно изменить позже.',
+      1 =>
+        records(recommendations['items']).isNotEmpty
+            ? 'Мы уже подобрали варианты под твою цель и ритм. Выбери один — весь план сразу не нужен.'
+            : 'Открой список активностей и выбери один реалистичный шаг на ближайшее время.',
+      _ =>
+        'В маршруте ${planItems.length} ${planItems.length == 1 ? 'шаг' : 'шага'}. Открой его и двигайся по порядку.',
+    };
+    final action = switch (step) {
+      0 => ('Выбрать направление', 'goal'),
+      1 => ('Выбрать первый шаг', 'catalog'),
+      _ => ('Открыть маршрут', 'plan'),
+    };
+    final completed = [hasGoal, hasPlan, hasAction];
+    const labels = ['Направление', 'Первый шаг', 'Действие'];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1C2C55), Color(0xFF241D43)],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: violet.withValues(alpha: .38)),
+        boxShadow: [
+          BoxShadow(
+            color: violet.withValues(alpha: .09),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ТВОЙ МАРШРУТ · ШАГ ${step + 1} ИЗ 3',
+            style: const TextStyle(
+              color: cyan,
+              fontSize: 9,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              color: ink,
+              fontSize: 24,
+              height: 1.25,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Text(
+              description,
+              style: const TextStyle(color: muted, height: 1.65),
+            ),
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () => go(action.$2),
+            iconAlignment: IconAlignment.end,
+            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+            label: Text(action.$1),
+          ),
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final (index, label) in labels.indexed)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: completed[index]
+                        ? cyan.withValues(alpha: .1)
+                        : index == step
+                        ? pink.withValues(alpha: .11)
+                        : night.withValues(alpha: .3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: completed[index]
+                          ? cyan.withValues(alpha: .28)
+                          : index == step
+                          ? pink.withValues(alpha: .28)
+                          : line.withValues(alpha: .55),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        completed[index]
+                            ? Icons.check_circle_rounded
+                            : Icons.circle_outlined,
+                        color: completed[index]
+                            ? cyan
+                            : index == step
+                            ? pink
+                            : muted,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget progressSummary(Json p) => Container(
+    margin: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF172442), Color(0xFF161C35)],
+      ),
+      borderRadius: BorderRadius.circular(25),
+      border: Border.all(color: cyan.withValues(alpha: .2)),
+      boxShadow: [
+        BoxShadow(
+          color: cyan.withValues(alpha: .045),
+          blurRadius: 26,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    ),
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: cyan.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(Icons.insights_rounded, color: cyan, size: 24),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: SectionTitle(
+                'Прогресс к цели',
+                subtitle: 'Три показателя отвечают на разные вопросы и не смешиваются между собой.',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
         actions([
           metric(
-            'По последней оценке',
+            'Последняя оценка',
             pct(p['assessed_readiness']),
             accent: blue,
           ),
-          metric('Расчёт после действий', pct(p['estimated_readiness'])),
-          metric('Покрытие оценок', pct(p['coverage']), accent: cyan),
+          metric('Расчёт после шагов', pct(p['estimated_readiness'])),
+          metric('Полнота данных', pct(p['coverage']), accent: cyan),
         ]),
-        const SizedBox(height: 16),
-        Text(
-          'Оценка от ${dateLabel(p['assessment_at'])}. Расчётные баллы не заменяют аттестацию и не гарантируют повышение.',
-          style: const TextStyle(color: muted, fontSize: 12),
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: night.withValues(alpha: .34),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: line.withValues(alpha: .52)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline_rounded, color: muted, size: 18),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Оценка от ${dateLabel(p['assessment_at'])}. Расчёт после действий не заменяет аттестацию и не гарантирует повышение.',
+                  style: const TextStyle(
+                    color: muted,
+                    fontSize: 11,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         if (p['status'] != 'ready')
           Padding(
-            padding: const EdgeInsets.only(top: 10),
+            padding: const EdgeInsets.only(top: 12),
             child: Text(label(p['status'])),
           ),
-        const SizedBox(height: 14),
-        button('Посмотреть навыки', () => go('skills')),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: () => go('skills'),
+          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+          iconAlignment: IconAlignment.end,
+          label: const Text('Разобрать навыки'),
+        ),
       ],
     ),
   );
@@ -457,18 +723,44 @@ extension _CareerViews on _WorkspaceState {
     Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '${label(a['format'])} · ${a['duration_minutes']} мин.',
-          style: const TextStyle(color: cyan),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Tag(label(a['format']), icon: Icons.widgets_outlined, color: cyan),
+            Tag(
+              '${a['duration_minutes']} мин.',
+              icon: Icons.schedule_rounded,
+              color: blue,
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        Text(value(a['description'])),
-        const SizedBox(height: 12),
-        Text(
-          map(a['gains']).entries
-              .map((g) => '${skillName(g.key)} +${g.value}')
-              .join(' · '),
-          style: const TextStyle(color: violet),
+        const SizedBox(height: 14),
+        Text(value(a['description']), style: const TextStyle(height: 1.55)),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: violet.withValues(alpha: .07),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: violet.withValues(alpha: .16)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.trending_up_rounded, color: violet, size: 18),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  map(a['gains']).entries
+                      .map((g) => '${skillName(g.key)} +${g.value}')
+                      .join(' · '),
+                  style: const TextStyle(color: violet, height: 1.4),
+                ),
+              ),
+            ],
+          ),
         ),
         if (a['blocked_reason'] != null)
           Padding(
@@ -641,68 +933,323 @@ extension _CareerViews on _WorkspaceState {
       pager(data),
     ],
   );
-  Widget planView(Json saved, {bool readOnly = false}) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      heading(
-        'Твой план',
-        '${saved['total_minutes'] ?? 0} мин. · ориентир ${saved['estimated_weeks'] ?? 0} нед. при выбранном ритме',
-      ),
-      if (records(saved['items']).isEmpty)
-        empty(
-          'В плане пока нет шагов. Выберите рекомендации или откройте каталог.',
+  Widget planView(Json saved, {bool readOnly = false}) {
+    final items = records(saved['items']);
+    final totalMinutes = saved['total_minutes'] ?? 0;
+    final estimatedWeeks = saved['estimated_weeks'] ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        heading(
+          'Шаги маршрута',
+          'Двигайся по дороге последовательно: один реальный шаг за другим.',
         ),
-      for (final (i, p) in records(saved['items']).indexed)
-        card(
-          '${i + 1}. ${p['activity']['title']}',
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label(p['status']), style: const TextStyle(color: pink)),
-              if (p['blocked_reason'] != null) Text(label(p['blocked_reason'])),
-              const SizedBox(height: 16),
-              if (!readOnly)
-                actions([
-                  button(
-                    'Открыть материал',
-                    () => go('activities/${p['activity_id']}'),
-                  ),
-                  if (p['status'] == 'planned')
-                    button(
-                      'Начать',
-                      () => act(
-                        'POST',
-                        '/api/me/plan/items/${segment(p['id'])}/start',
-                      ),
-                      primary: true,
-                    ),
-                  if (p['status'] == 'in_progress')
-                    button('Завершить', () => completeStep(p), primary: true),
-                  button('Заменить', () => replaceStep(p)),
-                  button('Убрать', () async {
-                    if (await confirm('Убрать шаг?', p['activity']['title'])) {
-                      await act(
-                        'POST',
-                        '/api/me/plan/items/${segment(p['id'])}/archive',
-                      );
-                    }
-                  }),
-                  if (i > 0)
-                    button('Выше', () {
-                      final ids = records(saved['items'])
-                          .map((x) => x['id'])
-                          .toList();
-                      final previous = ids[i - 1];
-                      ids[i - 1] = ids[i];
-                      ids[i] = previous;
-                      act('PUT', '/api/me/plan/order', {'item_ids': ids});
-                    }),
-                ]),
-            ],
+        _planSummary(items.length, totalMinutes, estimatedWeeks),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: button(
+            'Собрать маршрут с OpenAI',
+            () => go('assistant'),
+            primary: true,
           ),
         ),
-      if (!readOnly) button('Открыть каталог', () => go('catalog')),
+        const SizedBox(height: 18),
+        if (items.isEmpty)
+          Surface(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const EmptyState(
+                  'Дорога начинается с первой точки',
+                  'Выбери одну активность, которую реально начать в ближайшее время.',
+                  icon: Icons.add_road_rounded,
+                ),
+                if (!readOnly)
+                  button(
+                    'Проложить первый шаг',
+                    () => go('catalog'),
+                    primary: true,
+                  ),
+              ],
+            ),
+          )
+        else
+          _planRoad(items, readOnly),
+        if (!readOnly && items.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          if (items.length < 3)
+            button('Проложить ещё один шаг', () => go('catalog'))
+          else
+            const Center(
+              child: Tag(
+                'Маршрут собран · 3 шага',
+                color: cyan,
+                icon: Icons.flag_rounded,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _planSummary(int count, dynamic minutes, dynamic weeks) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [blue.withValues(alpha: .12), violet.withValues(alpha: .07)],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: blue.withValues(alpha: .22)),
+    ),
+    child: Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        const Icon(Icons.alt_route_rounded, color: blue, size: 22),
+        Text(
+          count == 0
+              ? 'Маршрут пока пуст'
+              : 'Маршрут из $count ${count == 1 ? 'шага' : 'шагов'}',
+          style: const TextStyle(
+            color: ink,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Tag('$count / 3', color: violet, icon: Icons.route_rounded),
+        Tag('$minutes мин.', color: pink, icon: Icons.schedule_rounded),
+        Tag('~$weeks нед.', color: cyan, icon: Icons.calendar_month_rounded),
+      ],
+    ),
+  );
+
+  Widget _planRoad(List<Json> items, bool readOnly) => Container(
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF111A34), Color(0xFF0B1128)],
+      ),
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: line.withValues(alpha: .78)),
+      boxShadow: [
+        BoxShadow(
+          color: blue.withValues(alpha: .055),
+          blurRadius: 32,
+          offset: const Offset(0, 14),
+        ),
+      ],
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: LayoutBuilder(
+      builder: (context, box) {
+        final compact = box.maxWidth < 720;
+        final rowHeight = compact ? 350.0 : 238.0;
+        const topInset = 54.0;
+        const bottomInset = 58.0;
+        final height = topInset + rowHeight * items.length + bottomInset;
+        double stopX(int i) =>
+            compact ? 34 : box.maxWidth * (i.isEven ? .2 : .8);
+        return SizedBox(
+          height: height,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _CareerRoadPainter(
+                    stops: items.length,
+                    compact: compact,
+                    rowHeight: rowHeight,
+                    topInset: topInset,
+                    bottomInset: bottomInset,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: box.maxWidth / 2 - 15,
+                child: const _RoadTerminal(
+                  icon: Icons.navigation_rounded,
+                  color: blue,
+                  semanticsLabel: 'Начало маршрута',
+                ),
+              ),
+              for (final (i, item) in items.indexed) ...[
+                Positioned(
+                  top: topInset + i * rowHeight + 17,
+                  left: compact ? 76 : (i.isEven ? box.maxWidth * .32 : 18),
+                  right: compact ? 12 : (i.isEven ? 18 : box.maxWidth * .32),
+                  child: _planStepCard(item, i, items, readOnly, compact),
+                ),
+                Positioned(
+                  top: topInset + i * rowHeight + rowHeight / 2 - 28,
+                  left: stopX(i) - 28,
+                  child: _RoadStop(
+                    number: i + 1,
+                    status: value(item['status'], 'planned'),
+                    title: value(item['activity']?['title']),
+                  ),
+                ),
+              ],
+              Positioned(
+                bottom: 12,
+                left: box.maxWidth / 2 - 15,
+                child: const _RoadTerminal(
+                  icon: Icons.flag_rounded,
+                  color: pink,
+                  semanticsLabel: 'Конец текущего маршрута',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+
+  Widget _planStepCard(
+    Json item,
+    int index,
+    List<Json> items,
+    bool readOnly,
+    bool compact,
+  ) {
+    final activity = map(item['activity']);
+    final status = value(item['status'], 'planned');
+    final statusColor = _roadStatusColor(status);
+    return Surface(
+      padding: 18,
+      color: const Color(0xFF182340),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (compact)
+            Wrap(
+              spacing: 8,
+              runSpacing: 7,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _roadStepLabel(index),
+                Tag(
+                  label(status),
+                  color: statusColor,
+                  background: statusColor.withValues(alpha: .09),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                _roadStepLabel(index),
+                const Spacer(),
+                Tag(
+                  label(status),
+                  color: statusColor,
+                  background: statusColor.withValues(alpha: .09),
+                ),
+              ],
+            ),
+          const SizedBox(height: 12),
+          Text(
+            value(activity['title']),
+            style: const TextStyle(
+              color: ink,
+              fontSize: 19,
+              height: 1.25,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 9),
+          Wrap(
+            spacing: 12,
+            runSpacing: 7,
+            children: [
+              if (activity['duration_minutes'] != null)
+                _roadMeta(
+                  Icons.schedule_rounded,
+                  '${activity['duration_minutes']} мин.',
+                ),
+              if (activity['format'] != null)
+                _roadMeta(Icons.widgets_outlined, label(activity['format'])),
+            ],
+          ),
+          if (item['blocked_reason'] != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              label(item['blocked_reason']),
+              style: const TextStyle(color: danger, fontSize: 12, height: 1.4),
+            ),
+          ],
+          if (!readOnly) ...[
+            const SizedBox(height: 16),
+            Divider(color: line.withValues(alpha: .65), height: 1),
+            const SizedBox(height: 14),
+            actions([
+              button(
+                'Открыть материал',
+                () => go('activities/${item['activity_id']}'),
+              ),
+              if (status == 'planned')
+                button(
+                  'Начать',
+                  () => act(
+                    'POST',
+                    '/api/me/plan/items/${segment(item['id'])}/start',
+                  ),
+                  primary: true,
+                ),
+              if (status == 'in_progress')
+                button('Завершить', () => completeStep(item), primary: true),
+              button('Заменить', () => replaceStep(item)),
+              button('Убрать', () async {
+                if (await confirm('Убрать шаг?', activity['title'])) {
+                  await act(
+                    'POST',
+                    '/api/me/plan/items/${segment(item['id'])}/archive',
+                  );
+                }
+              }),
+              if (index > 0)
+                button('Поднять выше', () {
+                  final ids = items.map((x) => x['id']).toList();
+                  final previous = ids[index - 1];
+                  ids[index - 1] = ids[index];
+                  ids[index] = previous;
+                  act('PUT', '/api/me/plan/order', {'item_ids': ids});
+                }),
+            ]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _roadMeta(IconData icon, String text) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, color: muted, size: 13),
+      const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: muted, fontSize: 10),
+        ),
+      ),
     ],
+  );
+
+  Widget _roadStepLabel(int index) => Text(
+    'ЭТАП ${(index + 1).toString().padLeft(2, '0')}',
+    style: const TextStyle(
+      color: blue,
+      fontSize: 9,
+      letterSpacing: 1.35,
+      fontWeight: FontWeight.w800,
+    ),
   );
   Future<void> replaceStep(Json p) async {
     final items = <Json>[];
@@ -1173,51 +1720,508 @@ extension _CareerViews on _WorkspaceState {
       ),
     ],
   );
-  Widget assistantView() => card(
-    'Разберём твой маршрут',
+  Widget assistantView() {
+    final answer = map(data['answer']);
+    final draft = map(data['draft']);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        heading(
+          'OpenAI Career Copilot',
+          'Объясняет расчёты и собирает черновик маршрута из реальных мероприятий.',
+        ),
+        _assistantHero(data['configured'] == true),
+        card(
+          'Разобраться в рекомендациях',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Выбери вопрос — помощник ответит по твоей цели, оценкам и сохранённому плану.',
+                style: TextStyle(color: muted, height: 1.6),
+              ),
+              const SizedBox(height: 18),
+              actions([
+                for (final q in [
+                  ('why', 'Почему эти шаги?'),
+                  ('time', 'Как уложиться во время?'),
+                  ('forecast', 'Что изменится после плана?'),
+                  ('gaps', 'Каких навыков не хватает?'),
+                ])
+                  button(q.$2, () => _askOpenAI(q.$1)),
+              ]),
+            ],
+          ),
+        ),
+        if (answer.isNotEmpty) _assistantAnswer(answer),
+        card(
+          'Собрать маршрут по мероприятиям',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'OpenAI выберет до трёх совместимых шагов из каталога. Сервер проверит время, конфликты и пользу для цели.',
+                style: TextStyle(color: muted, height: 1.6),
+              ),
+              const SizedBox(height: 18),
+              actions([
+                button(
+                  'Сбалансированный',
+                  () => _composeOpenAIPlan('balanced'),
+                  primary: true,
+                  icon: Icons.route_rounded,
+                ),
+                button('Быстрый старт', () => _composeOpenAIPlan('quick')),
+                button('Максимум эффекта', () => _composeOpenAIPlan('impact')),
+              ]),
+            ],
+          ),
+        ),
+        if (busy) ...[
+          const LinearProgressIndicator(color: pink),
+          const SizedBox(height: 18),
+        ],
+        if (draft.isNotEmpty) _assistantDraft(draft),
+      ],
+    );
+  }
+
+  Widget _assistantHero(bool configured) => Container(
+    margin: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF1D2E58), Color(0xFF241B43)],
+      ),
+      borderRadius: BorderRadius.circular(25),
+      border: Border.all(color: violet.withValues(alpha: .35)),
+      boxShadow: [
+        BoxShadow(color: violet.withValues(alpha: .08), blurRadius: 30),
+      ],
+    ),
+    child: LayoutBuilder(
+      builder: (context, box) {
+        final copy = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Tag(
+              configured ? 'OPENAI ПОДКЛЮЧЁН' : 'ЛОКАЛЬНЫЙ РЕЖИМ',
+              color: configured ? cyan : violet,
+              icon: configured
+                  ? Icons.auto_awesome_rounded
+                  : Icons.shield_outlined,
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              'Твой маршрут — с логикой, а не с магией',
+              style: TextStyle(
+                color: ink,
+                fontSize: 24,
+                height: 1.2,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              configured
+                  ? 'OpenAI формулирует понятный ответ, а Career Quest проверяет каждый факт и шаг.'
+                  : 'Если OpenAI недоступен, безопасный локальный алгоритм продолжит работу без потери сценария.',
+              style: const TextStyle(color: muted, height: 1.55),
+            ),
+          ],
+        );
+        final icon = Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            color: pink.withValues(alpha: .12),
+            shape: BoxShape.circle,
+            border: Border.all(color: pink.withValues(alpha: .35)),
+          ),
+          child: const Icon(Icons.hiking_rounded, color: pink, size: 38),
+        );
+        if (box.maxWidth < 620) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [icon, const SizedBox(height: 18), copy],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: copy),
+            const SizedBox(width: 24),
+            icon,
+          ],
+        );
+      },
+    ),
+  );
+
+  Future<void> _askOpenAI(String question) async {
+    setState(() {
+      busy = true;
+      error = '';
+    });
+    try {
+      final result = await api.request('POST', '/api/me/assistant/explain', {
+        'question': question,
+      });
+      if (mounted) setState(() => data = {...data, 'answer': result});
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _composeOpenAIPlan(String focus) async {
+    setState(() {
+      busy = true;
+      error = '';
+    });
+    try {
+      final result = await api.request('POST', '/api/me/assistant/plan', {
+        'focus': focus,
+      });
+      if (mounted) setState(() => data = {...data, 'draft': result});
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Widget _assistantAnswer(Json answer) => card(
+    value(answer['title'], 'Ответ помощника'),
     Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Помощник объясняет расчёты по вашему профилю. Он не принимает решения о повышении.',
+        _assistantMode(answer),
+        const SizedBox(height: 16),
+        Text(
+          value(answer['text']),
+          style: const TextStyle(color: ink, fontSize: 17, height: 1.65),
         ),
-        const SizedBox(height: 20),
-        actions([
-          for (final q in [
-            ('why', 'Почему эти шаги?'),
-            ('time', 'Как уложиться во время?'),
-            ('forecast', 'Что изменится после плана?'),
-            ('gaps', 'Каких навыков не хватает?'),
-          ])
-            button(q.$2, () async {
-              setState(() => busy = true);
-              try {
-                final result = await api.request(
-                  'POST',
-                  '/api/me/assistant/explain',
-                  {'question': q.$1},
-                );
-                if (mounted) setState(() => data = result);
-              } catch (e) {
-                if (mounted) setState(() => error = e.toString());
-              } finally {
-                if (mounted) setState(() => busy = false);
-              }
-            }),
-        ]),
-        const SizedBox(height: 24),
-        if (busy) const LinearProgressIndicator(),
-        if (data['text'] != null) ...[
-          Text(data['text'], style: const TextStyle(fontSize: 17, height: 1.8)),
-          const SizedBox(height: 14),
-          Text(
-            data['mode'] == 'llm'
-                ? 'Объяснение OpenAI на основе расчётов'
-                : 'Объяснение на основе данных профиля',
-            style: const TextStyle(color: muted, fontSize: 12),
-          ),
+        if ((answer['bullets'] as List? ?? const []).isNotEmpty) ...[
+          const SizedBox(height: 16),
+          for (final item in (answer['bullets'] as List? ?? const []))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 5),
+                    child: Icon(Icons.auto_awesome, color: cyan, size: 15),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      value(item),
+                      style: const TextStyle(height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        if (records(answer['metrics']).isNotEmpty) ...[
+          const SizedBox(height: 10),
+          actions([
+            for (final row in records(answer['metrics']))
+              metric(value(row['label']), value(row['value']), accent: cyan),
+          ]),
         ],
       ],
+    ),
+  );
+
+  Widget _assistantMode(Json result) => Align(
+    alignment: Alignment.centerLeft,
+    child: Tag(
+      result['mode'] == 'llm'
+          ? 'OPENAI · ${value(result['model'], 'MODEL')}'
+          : 'ПРОВЕРЕННЫЙ ЛОКАЛЬНЫЙ ОТВЕТ',
+      color: result['mode'] == 'llm' ? cyan : violet,
+      icon: result['mode'] == 'llm'
+          ? Icons.auto_awesome_rounded
+          : Icons.verified_user_outlined,
+    ),
+  );
+
+  Widget _assistantDraft(Json draft) => card(
+    value(draft['headline'], 'Черновик маршрута'),
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _assistantMode(draft),
+        const SizedBox(height: 15),
+        Text(
+          value(draft['summary']),
+          style: const TextStyle(color: ink, fontSize: 16, height: 1.6),
+        ),
+        const SizedBox(height: 16),
+        actions([
+          metric('Шагов', '${records(draft['items']).length}', accent: pink),
+          metric(
+            'Время',
+            '${value(draft['total_minutes'], '0')} мин.',
+            accent: cyan,
+          ),
+          metric(
+            'Ориентир',
+            '${value(draft['estimated_weeks'], '0')} нед.',
+            accent: violet,
+          ),
+        ]),
+        const SizedBox(height: 20),
+        if (records(draft['items']).isEmpty)
+          const Notice(
+            'Подходящих свободных шагов сейчас нет. Проверь цель, оценки или текущий маршрут.',
+          ),
+        for (final item in records(draft['items'])) _assistantDraftItem(item),
+        const SizedBox(height: 4),
+        Text(
+          value(draft['disclaimer']),
+          style: const TextStyle(color: muted, fontSize: 12, height: 1.5),
+        ),
+      ],
+    ),
+  );
+
+  Widget _assistantDraftItem(Json item) => Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: night.withValues(alpha: .34),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: line.withValues(alpha: .75)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          value(item['title']),
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value(item['reason']),
+          style: const TextStyle(color: muted, height: 1.5),
+        ),
+        const SizedBox(height: 12),
+        actions([
+          Tag('${value(item['duration_minutes'])} мин.', color: cyan),
+          Tag(label(item['format']), color: violet),
+          for (final skill in (item['focus_skills'] as List? ?? const []))
+            Tag(value(skill), color: pink),
+        ]),
+        const SizedBox(height: 14),
+        actions([
+          button('Подробнее', () => go('activities/${item['id']}')),
+          button('Добавить в маршрут', () async {
+            await addActivity(value(item['id']));
+            if (mounted) go('plan');
+          }, primary: true),
+        ]),
+      ],
+    ),
+  );
+}
+
+Color _roadStatusColor(String status) => switch (status) {
+  'completed' => cyan,
+  'in_progress' => pink,
+  'planned' => violet,
+  _ => muted,
+};
+
+class _CareerRoadPainter extends CustomPainter {
+  const _CareerRoadPainter({
+    required this.stops,
+    required this.compact,
+    required this.rowHeight,
+    required this.topInset,
+    required this.bottomInset,
+  });
+
+  final int stops;
+  final bool compact;
+  final double rowHeight;
+  final double topInset;
+  final double bottomInset;
+
+  Offset _stop(Size size, int index) => Offset(
+    compact ? 34 : size.width * (index.isEven ? .2 : .8),
+    topInset + index * rowHeight + rowHeight / 2,
+  );
+
+  Path _road(Size size) {
+    final points = <Offset>[
+      Offset(size.width / 2, 27),
+      for (var i = 0; i < stops; i++) _stop(size, i),
+      Offset(size.width / 2, size.height - 27),
+    ];
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var i = 1; i < points.length; i++) {
+      final from = points[i - 1];
+      final to = points[i];
+      final middle = (from.dy + to.dy) / 2;
+      path.cubicTo(from.dx, middle, to.dx, middle, to.dx, to.dy);
+    }
+    return path;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final road = _road(size);
+    canvas.drawPath(
+      road,
+      Paint()
+        ..color = blue.withValues(alpha: .08)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 42
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+    );
+    canvas.drawPath(
+      road,
+      Paint()
+        ..color = const Color(0xFF536489)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 26
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.drawPath(
+      road,
+      Paint()
+        ..color = const Color(0xFF10182D)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 19
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.drawPath(
+      road,
+      Paint()
+        ..color = blue.withValues(alpha: .16)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round,
+    );
+
+    final divider = Paint()
+      ..color = ink.withValues(alpha: .48)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    for (final metric in road.computeMetrics()) {
+      var distance = 5.0;
+      while (distance < metric.length) {
+        final end = (distance + 11).clamp(0, metric.length).toDouble();
+        canvas.drawPath(metric.extractPath(distance, end), divider);
+        distance += 24;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CareerRoadPainter oldDelegate) =>
+      oldDelegate.stops != stops ||
+      oldDelegate.compact != compact ||
+      oldDelegate.rowHeight != rowHeight ||
+      oldDelegate.topInset != topInset ||
+      oldDelegate.bottomInset != bottomInset;
+}
+
+class _RoadStop extends StatelessWidget {
+  const _RoadStop({
+    required this.number,
+    required this.status,
+    required this.title,
+  });
+
+  final int number;
+  final String status;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _roadStatusColor(status);
+    final icon = switch (status) {
+      'completed' => Icons.check_rounded,
+      'in_progress' => Icons.play_arrow_rounded,
+      _ => null,
+    };
+    return Semantics(
+      label: 'Этап $number: $title, ${label(status)}',
+      child: Container(
+        width: 56,
+        height: 56,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color,
+              Color.alphaBlend(night.withValues(alpha: .38), color),
+            ],
+          ),
+          border: Border.all(color: ink.withValues(alpha: .72), width: 2),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: .38), blurRadius: 18),
+            const BoxShadow(
+              color: Color(0xAA080D22),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: icon == null
+            ? Text(
+                '$number',
+                style: const TextStyle(
+                  color: night,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              )
+            : Icon(icon, color: night, size: 28),
+      ),
+    );
+  }
+}
+
+class _RoadTerminal extends StatelessWidget {
+  const _RoadTerminal({
+    required this.icon,
+    required this.color,
+    required this.semanticsLabel,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: semanticsLabel,
+    child: Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: panelRaised,
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: .72), width: 2),
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: .25), blurRadius: 12),
+        ],
+      ),
+      child: Icon(icon, color: color, size: 16),
     ),
   );
 }

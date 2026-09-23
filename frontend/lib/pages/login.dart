@@ -21,6 +21,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  static const _demoPasswords = {
+    'employee.demo': 'Employee123!',
+    'colleague.demo': 'Colleague123!',
+    'hr.demo': 'Hr123!',
+  };
+
   final username = TextEditingController();
   final password = TextEditingController();
   bool busy = false;
@@ -44,6 +50,16 @@ class _LoginPageState extends State<LoginPage> {
       curve: Curves.easeInOutCubic,
       alignment: .04,
     );
+  }
+
+  void _selectDemo(String login) {
+    if (busy) return;
+    setState(() {
+      selected = login;
+      username.text = login;
+      password.text = _demoPasswords[login] ?? '';
+      error = null;
+    });
   }
 
   @override
@@ -438,19 +454,12 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: 10),
           TextButton(
-            onPressed: busy
-                ? null
-                : () => setState(() {
-                    selected = 'colleague.demo';
-                    username.text = selected;
-                    password.clear();
-                    error = null;
-                  }),
+            onPressed: busy ? null : () => _selectDemo('colleague.demo'),
             child: const Text('Другой сотрудник · colleague.demo'),
           ),
           const SizedBox(height: 17),
           const Text(
-            'Тестовые профили с синтетическими данными. Выбор заполнит логин; пароль задаётся при запуске сервера.',
+            'Тестовые профили с синтетическими данными. Выбор заполнит логин и пароль.',
             style: TextStyle(color: muted, fontSize: 11, height: 1.7),
           ),
         ],
@@ -473,14 +482,7 @@ class _LoginPageState extends State<LoginPage> {
     ),
     child: InkWell(
       borderRadius: BorderRadius.circular(18),
-      onTap: busy
-          ? null
-          : () => setState(() {
-              selected = login;
-              username.text = login;
-              password.clear();
-              error = null;
-            }),
+      onTap: busy ? null : () => _selectDemo(login),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(

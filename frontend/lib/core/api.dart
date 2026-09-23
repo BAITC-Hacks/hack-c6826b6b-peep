@@ -56,7 +56,7 @@ class CareerApi {
         method != 'GET' &&
         !path.startsWith('/api/auth/') &&
         path != '/api/me/simulations' &&
-        path != '/api/me/assistant/explain';
+        !path.startsWith('/api/me/assistant/');
     final payload = body == null
         ? <String, dynamic>{}
         : Map<String, dynamic>.from(body);
