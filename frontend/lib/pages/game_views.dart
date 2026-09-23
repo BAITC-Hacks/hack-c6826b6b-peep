@@ -2,55 +2,25 @@
 part of 'workspace.dart';
 
 extension _GameViews on _WorkspaceState {
-  Widget seasonSummary(Json s) => card(
-    'Твой сезон · уровень ${s['level']} / ${s['max_level'] ?? 100}',
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(value(s['season']?['name']), style: const TextStyle(color: muted)),
-        const SizedBox(height: 18),
-        LinearProgressIndicator(
-          value: ((s['pass_progress'] ?? 0) as num).toDouble().clamp(0, 1),
-          minHeight: 10,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        const SizedBox(height: 20),
-        actions([
-          metric(
-            'Подтверждённый опыт',
-            '${s['confirmed_xp']} XP',
-            accent: blue,
-          ),
-          metric(
-            'До следующего уровня',
-            '${s['xp_to_next']} XP',
-            accent: violet,
-          ),
-          metric(
-            'CQ-монеты',
-            '${s['wallet_balance']}',
-            accent: const Color(0xFFF2D28C),
-          ),
-          metric('Серия активных дней', '${s['current_streak']}', accent: cyan),
-        ]),
-        const SizedBox(height: 18),
-        Text(
-          'Место: ${value(s['rank'], 'Ещё не начал')} · Ожидает проверки: ${s['pending_xp']} XP',
-          style: const TextStyle(color: muted),
-        ),
-        const SizedBox(height: 16),
-        actions([
-          button('Открыть пропуск', () {
+  Widget seasonSummary(Json s) => SeasonProgressCard(
+    summary: s,
+    compact: page == 'season' && seasonTab == 'pass',
+    featured: page == 'home',
+    onOpenPass: page == 'season' && seasonTab == 'pass'
+        ? null
+        : () {
             seasonTab = 'pass';
             go('season');
-          }, primary: true),
-          button('Мои подарки', () => go('rewards')),
-        ]),
-      ],
-    ),
+          },
+    onRewards: () => go('rewards'),
   );
   Widget seasonView() {
     final content = map(data['content']);
+    final reset = DateTime.tryParse(value(content['resets_at'], ''));
+    final minutes =
+        reset?.difference(api.estimatedServerTime).inMinutes.clamp(0, 1440) ??
+        0;
+    final remaining = '${minutes ~/ 60} ч ${minutes % 60} мин';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -65,8 +35,8 @@ extension _GameViews on _WorkspaceState {
           ),
         actions([
           for (final t in [
-            ('tasks', 'Задания дня'),
             ('pass', '${data['max_level'] ?? 100} уровней'),
+            ('tasks', 'Задания дня'),
             ('streak', 'Календарь серии'),
             ('leaderboard', 'Рейтинг'),
             ('xp', 'Журнал XP'),
@@ -90,7 +60,7 @@ extension _GameViews on _WorkspaceState {
           card(
             'Недельная миссия',
             Text(
-              'Подтверждено ${content['weekly_days'] ?? 0} / ${content['weekly_required'] ?? 5} дней на неделе. Награда: ${content['weekly_xp'] ?? 250} XP.\nЗадания обновятся ${value(content['resets_at'])}.',
+              'Подтверждено ${content['weekly_days'] ?? 0} / ${content['weekly_required'] ?? 5} дней на неделе. Награда: ${content['weekly_xp'] ?? 250} XP.\nДо обновления заданий: $remaining · Asia/Almaty.',
               style: const TextStyle(height: 1.8),
             ),
           ),
@@ -137,49 +107,20 @@ extension _GameViews on _WorkspaceState {
             empty('Задания доступны только в активном сезоне.'),
         ],
         if (seasonTab == 'pass') ...[
-          const Text(
-            'CQ начисляются автоматически. Подарки каждых пяти уровней выбираются отдельно и не списывают монеты. Выдача в этом приложении тестовая.',
-            style: TextStyle(color: muted, height: 1.8),
+          CareerPassRoad(
+            key: ValueKey(data['season']?['id']),
+            levels: records(content['items']),
+            confirmedXp: (data['confirmed_xp'] as num? ?? 0).toInt(),
+            busy: busy,
+            onChooseGift: chooseGift,
           ),
-          const SizedBox(height: 20),
-          for (final level in records(content['items']))
-            card(
-              'Уровень ${level['level']} · ${level['required_total_xp']} XP',
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final part in records(level['components']))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        spacing: 16,
-                        runSpacing: 10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            part['name'],
-                            style: TextStyle(
-                              color: part['type'] == 'coins'
-                                  ? const Color(0xFFF2D28C)
-                                  : ink,
-                            ),
-                          ),
-                          Text(
-                            label(part['status']),
-                            style: const TextStyle(color: muted),
-                          ),
-                          if (part['status'] == 'available')
-                            button(
-                              'Выбрать подарок',
-                              () => chooseGift(part['entitlement_id']),
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(4, 16, 4, 24),
+            child: Text(
+              'CQ начисляются автоматически. Подарки выбираются отдельно и не списывают монеты. Выдача наград тестовая.',
+              style: TextStyle(color: muted, fontSize: 12, height: 1.7),
             ),
+          ),
         ],
         if (seasonTab == 'streak') ...[
           card(
@@ -247,6 +188,23 @@ extension _GameViews on _WorkspaceState {
               reload();
             },
           ),
+          if (filter == 'week')
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: select(
+                'Неделя сезона',
+                value(extraFilters['week'], ''),
+                [
+                  ('', 'Текущая'),
+                  for (var w = 0; w < 13; w++) ('$w', 'Неделя ${w + 1}'),
+                ],
+                (v) {
+                  extraFilters['week'] = v.isEmpty ? null : v;
+                  listPage = 1;
+                  reload();
+                },
+              ),
+            ),
           const SizedBox(height: 20),
           const Text(
             'Рейтинг подтверждённого участия в программе. Не оценка профессиональной результативности.',

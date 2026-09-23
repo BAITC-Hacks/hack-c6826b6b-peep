@@ -280,6 +280,8 @@ def summary(s, season, eid, now):
     level = level_for(season,xp)
     return dict(season=season_summary(season, eid), confirmed_xp=xp, level=level,
                 xp_to_next=season['rewards'][level]['required_total_xp']-xp if level<len(season['rewards']) else 0,
+                level_start_xp=season['rewards'][level-1]['required_total_xp'] if level else 0,
+                level_target_xp=season['rewards'][min(level,len(season['rewards'])-1)]['required_total_xp'],
                 max_level=len(season['rewards']), max_xp=season['rewards'][-1]['required_total_xp'],wallet_balance=wallet(s,eid)['balance'],
                 pass_progress=min(1,xp/season['rewards'][-1]['required_total_xp']), rank=(leaderboard(s,season,eid)['self'] or {}).get('rank'),
                 pending_xp=sum(r['xp_amount'] for r in s['reviews'].values() if r['season_id'] == season['id'] and r['employee_id'] == eid and r['status'] == 'pending'),

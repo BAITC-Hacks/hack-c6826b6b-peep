@@ -17,7 +17,15 @@ class CareerApi {
   final String baseUrl;
   String? token;
   int stateRevision = 0;
-  final Map<String, String> _pendingKeys = {};
+  final Stopwatch _elapsed = Stopwatch()..start();
+  DateTime? _serverTime;
+  Duration _receivedAt = Duration.zero;
+  DateTime get estimatedServerTime =>
+      (_serverTime ?? DateTime.now().toUtc()).add(
+        _serverTime == null ? Duration.zero : _elapsed.elapsed - _receivedAt,
+      );
+
+  final Map<String, ({String key, Uri uri, String body})> _pendingKeys = {};
   VoidCallback? onUnauthorized;
   Future<void> refreshConfiguration() async {
     final value = await get('/api/runtime-config');
@@ -52,12 +60,12 @@ class CareerApi {
     String path, [
     Map<String, dynamic>? body,
   ]) async {
-    final request = http.Request(method, _uri(path))..headers.addAll(_headers);
+    var request = http.Request(method, _uri(path))..headers.addAll(_headers);
     final mutation =
         method != 'GET' &&
         !path.startsWith('/api/auth/') &&
         path != '/api/me/simulations' &&
-        path != '/api/me/assistant/explain' &&
+        !path.startsWith('/api/me/assistant/') &&
         !(path.startsWith('/api/admin/') &&
             (path.endsWith('/simulate') || path.endsWith('/test')));
     final payload = body == null
@@ -69,19 +77,34 @@ class CareerApi {
     if (body != null || mutation && method != 'DELETE') {
       request.body = jsonEncode(payload);
     }
-    final signature = '$method:$path:${request.body}';
+    final intent = Map<String, dynamic>.from(body ?? {})
+      ..remove('expected_revision');
+    final query = Map<String, String>.from(request.url.queryParameters)
+      ..remove('expected_revision');
+    final identity = request.url.replace(
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final signature =
+        '$method:${identity.path}:${jsonEncode(query)}:${jsonEncode(intent)}';
     if (mutation) {
-      request.headers['Idempotency-Key'] = _pendingKeys.putIfAbsent(
+      // A lost response must retry the original revision/body even after a refresh.
+      final draft = _pendingKeys.putIfAbsent(
         signature,
-        _uuid,
+        () => (key: _uuid(), uri: request.url, body: request.body),
       );
+      request = http.Request(method, draft.uri)
+        ..headers.addAll(_headers)
+        ..body = draft.body;
+      request.headers['Idempotency-Key'] = draft.key;
     }
     try {
       final result = await _send(request, isLogin: path == '/api/auth/login');
       _pendingKeys.remove(signature);
       return result;
     } on ApiException catch (e) {
-      if (e.statusCode != null) _pendingKeys.remove(signature);
+      if (e.statusCode != null && e.statusCode! < 500) {
+        _pendingKeys.remove(signature);
+      }
       rethrow;
     }
   }
@@ -176,6 +199,11 @@ class CareerApi {
           data['error']?['code'],
         );
       }
+      final received = data['meta']?['server_time'];
+      if (received is String) {
+        _serverTime = DateTime.tryParse(received);
+        _receivedAt = _elapsed.elapsed;
+      }
       final revision = data['meta']?['state_revision'];
       if (revision is int) stateRevision = max(stateRevision, revision);
       if (data['data'] is Map) return Map<String, dynamic>.from(data['data']);
@@ -186,7 +214,7 @@ class CareerApi {
       );
     } on http.ClientException {
       throw ApiException(
-        'Сервис входа сейчас недоступен. Перезапустите приложение и попробуйте снова.',
+        'Сервер сейчас недоступен. Проверьте соединение и попробуйте снова.',
       );
     } on FormatException {
       throw ApiException('Не удалось прочитать ответ. Попробуйте ещё раз.');

@@ -2,7 +2,14 @@ import asyncio
 import json
 from copy import deepcopy
 import httpx
-from backend.assistant import CareerAssistant,OpenAIProvider,context_for,verified
+from backend.assistant import (
+    CareerAssistant,
+    OpenAIProvider,
+    context_for,
+    plan_context_for,
+    verified,
+    verified_plan,
+)
 from conftest import authorization
 
 
@@ -15,6 +22,17 @@ def test_context_is_anonymous_and_endpoint_falls_back(scenario):
         assert not set(context)&{'salary','department','employee_id','full_name','notes'}
     r=c.post('/api/me/assistant/explain',headers=authorization(c),json={'question':'why'})
     assert r.status_code==200 and r.json()['data']['mode']=='template'
+
+    with e.transaction() as s:
+        plan_context=plan_context_for(s,'E1',e.clock(),'balanced')
+        encoded=json.dumps(plan_context)
+        assert 'E1' not in encoded and 'Synthetic Person' not in encoded
+        assert len(plan_context['candidates'])<=16
+    r=c.post('/api/me/assistant/plan',headers=authorization(c),json={'focus':'balanced'})
+    assert r.status_code==200
+    result=r.json()['data']
+    assert result['mode']=='template' and len(result['items'])<=3
+    assert result['total_minutes']<=result['budget_remaining_minutes']
 
 
 def test_provider_request_contract_verification_cache_and_fallback(scenario,monkeypatch):
@@ -44,3 +62,56 @@ def test_provider_request_contract_verification_cache_and_fallback(scenario,monk
     assert verified(base,context)
     for bad in [dict(activity_ids=['invented']),dict(summary='Гарантирую рост на 99%'),dict(claims=[{'metric_key':'estimated_readiness','value':float('nan')}]),dict(claims=[{'metric_key':'estimated_readiness','value':100}])]:
         assert not verified({**base,**bad},context)
+
+
+def test_provider_can_compose_only_a_verified_catalog_plan(scenario,monkeypatch):
+    _,e,_=scenario
+    with e.transaction() as s:
+        context=plan_context_for(s,'E1',e.clock(),'balanced')
+    monkeypatch.setenv('AI_MODE','llm')
+    monkeypatch.setenv('OPENAI_API_KEY','local-test-key')
+    chosen=context['candidates'][0]
+    draft={
+        'headline':'Маршрут готов к проверке',
+        'summary':'Выбран совместимый шаг с полезным вкладом в цель.',
+        'activity_ids':[chosen['id']],
+        'rationale': [{
+            'activity_id':chosen['id'],
+            'reason':'Шаг связан с дефицитом и укладывается в доступный ритм.',
+            'focus_skills':chosen['focus_skills'][:1],
+        }],
+    }
+    assert verified_plan(draft,context)
+
+    def respond(request):
+        body=json.loads(request.content)
+        assert body['text']['format']['name']=='career_plan_draft'
+        return httpx.Response(200,json={'output':[{'type':'message','content':[{
+            'type':'output_text','text':json.dumps(draft,ensure_ascii=False),
+        }]}]})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            result=await CareerAssistant(OpenAIProvider(client)).compose_plan(context,'E1',8)
+            assert result['mode']=='llm'
+            assert result['items'][0]['id']==chosen['id']
+    asyncio.run(run())
+
+    invalid={**draft,'activity_ids':['invented']}
+    assert not verified_plan(invalid,context)
+
+
+def test_admin_ai_policy_applies_to_both_provider_requests():
+    bodies=[]
+    def respond(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200,json={'output':[{'type':'message','content':[{'type':'output_text','text':'{}'}]}]})
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider=OpenAIProvider(client)
+            settings={'model':'configured-model','max_output_tokens':321,'timeout_seconds':4}
+            await provider.explain({},settings)
+            await provider.compose_plan({},settings)
+    asyncio.run(run())
+    assert len(bodies)==2
+    assert all(body['model']=='configured-model' and body['max_output_tokens']==321 for body in bodies)

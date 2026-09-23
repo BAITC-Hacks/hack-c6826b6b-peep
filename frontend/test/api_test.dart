@@ -95,4 +95,63 @@ void main() {
     );
     expect(api.token, 'session');
   });
+  test(
+    'Assistant requests are read-only and carry no mutation headers',
+    () async {
+      final api = CareerApi(
+        baseUrl: 'http://test',
+        client: MockClient((request) async {
+          expect(request.headers['Idempotency-Key'], isNull);
+          expect(jsonDecode(request.body), {'focus': 'balanced'});
+          return http.Response(
+            '{"data":{"mode":"template"},"meta":{"state_revision":4}}',
+            200,
+          );
+        }),
+      );
+      addTearDown(api.dispose);
+      api.token = 'session';
+      api.stateRevision = 4;
+      expect(
+        await api.request('POST', '/api/me/assistant/plan', {
+          'focus': 'balanced',
+        }),
+        {'mode': 'template'},
+      );
+    },
+  );
+  test(
+    'Network retry preserves UUID and original body across refreshed revision',
+    () async {
+      var calls = 0;
+      String? key;
+      String? body;
+      final api = CareerApi(
+        baseUrl: 'http://test',
+        client: MockClient((r) async {
+          if (calls++ == 0) {
+            key = r.headers['Idempotency-Key'];
+            body = r.body;
+            throw http.ClientException('offline');
+          }
+          expect(r.headers['Idempotency-Key'], key);
+          expect(r.body, body);
+          return http.Response(
+            '{"data":{"ok":true},"meta":{"state_revision":8}}',
+            200,
+          );
+        }),
+      );
+      addTearDown(api.dispose);
+      api.token = 'session';
+      api.stateRevision = 7;
+      await expectLater(
+        api.request('POST', '/api/me/shop/orders', {'item_id': 'x'}),
+        throwsA(isA<ApiException>()),
+      );
+      api.stateRevision = 9;
+      await api.request('POST', '/api/me/shop/orders', {'item_id': 'x'});
+      expect(api.stateRevision, 9);
+    },
+  );
 }
