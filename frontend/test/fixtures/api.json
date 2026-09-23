@@ -1,0 +1,1401 @@
+{
+  "/api/reference": {
+    "data": {
+      "roles": [
+        {
+          "grade_id": "Junior",
+          "requirements": {
+            "S1": {
+              "level": 20,
+              "weight": 3
+            }
+          },
+          "role_id": "Engineer"
+        },
+        {
+          "grade_id": "Lead",
+          "requirements": {
+            "S1": {
+              "level": 100,
+              "weight": 3
+            }
+          },
+          "role_id": "Engineer"
+        },
+        {
+          "grade_id": "Middle",
+          "requirements": {
+            "S1": {
+              "level": 40,
+              "weight": 3
+            }
+          },
+          "role_id": "Engineer"
+        },
+        {
+          "grade_id": "Senior",
+          "requirements": {
+            "S1": {
+              "level": 80,
+              "weight": 3
+            }
+          },
+          "role_id": "Engineer"
+        }
+      ],
+      "skills": [
+        {
+          "category": "engineering",
+          "description": "Test skill",
+          "name": "Synthetic Skill",
+          "skill_id": "S1",
+          "type": "hard"
+        }
+      ],
+      "allowed_formats": [
+        "online",
+        "offline",
+        "self_paced"
+      ],
+      "timezones": [
+        "Asia/Almaty",
+        "Asia/Qyzylorda",
+        "UTC"
+      ]
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/dashboard": {
+    "data": {
+      "employee": {
+        "assessment_at": "2026-09-01T23:59:59Z",
+        "assessment_date_source": "last_review_date",
+        "career_goal": null,
+        "department": "Engineering",
+        "employee_id": "E1",
+        "full_name": "Synthetic Person E1",
+        "grade": "Junior",
+        "hire_date": "2025-01-01",
+        "id": "E1",
+        "last_review_date": "2026-09-01",
+        "manager_id": null,
+        "preferred_language": "ru",
+        "role": "Engineer",
+        "skills": {
+          "S1": 20
+        },
+        "source_goal": null,
+        "source_scale": [
+          0,
+          5
+        ],
+        "source_skills": {
+          "S1": 1
+        },
+        "tenure_months": 21,
+        "work_format": "remote"
+      },
+      "goal": null,
+      "suggested_goal": {
+        "target_role": "Engineer",
+        "target_grade": "Middle"
+      },
+      "goal_source": "suggested",
+      "preferences": {
+        "weekly_minutes": 120,
+        "preferred_formats": [
+          "online",
+          "offline",
+          "self_paced"
+        ],
+        "timezone": "Asia/Almaty"
+      },
+      "progress": {
+        "goal": null,
+        "status": "no_goal",
+        "coverage": null,
+        "assessed_readiness": null,
+        "estimated_readiness": null,
+        "skills": [
+          {
+            "skill_id": "S1",
+            "name": "Synthetic Skill",
+            "assessed_level": 20,
+            "estimated_level": 20,
+            "required_level": null,
+            "weight": null,
+            "gap": null,
+            "contributions": []
+          }
+        ],
+        "assessment_at": "2026-09-01T23:59:59Z",
+        "missing_skill_ids": []
+      },
+      "plan": {
+        "items": [],
+        "total_minutes": 0,
+        "estimated_weeks": 0,
+        "forecast": {
+          "goal": null,
+          "status": "no_goal",
+          "coverage": null,
+          "assessed_readiness": null,
+          "estimated_readiness": null,
+          "skills": [
+            {
+              "skill_id": "S1",
+              "name": "Synthetic Skill",
+              "assessed_level": 20,
+              "estimated_level": 20,
+              "required_level": null,
+              "weight": null,
+              "gap": null,
+              "contributions": []
+            }
+          ],
+          "assessment_at": "2026-09-01T23:59:59Z",
+          "missing_skill_ids": []
+        },
+        "archived_count": 0
+      },
+      "recommendations": {
+        "items": [],
+        "empty_reason": "no_goal",
+        "diagnostics": {},
+        "progress": {
+          "goal": null,
+          "status": "no_goal",
+          "coverage": null,
+          "assessed_readiness": null,
+          "estimated_readiness": null,
+          "skills": [
+            {
+              "skill_id": "S1",
+              "name": "Synthetic Skill",
+              "assessed_level": 20,
+              "estimated_level": 20,
+              "required_level": null,
+              "weight": null,
+              "gap": null,
+              "contributions": []
+            }
+          ],
+          "assessment_at": "2026-09-01T23:59:59Z",
+          "missing_skill_ids": []
+        }
+      },
+      "gamification": {
+        "season": {
+          "id": "season_8d8e0f47b4a740daae916c8f21363bad",
+          "name": "Сезон 1. Новый уровень",
+          "status": "active",
+          "starts_at": "2026-09-22T19:00:00Z",
+          "ends_at": "2026-12-21T19:00:00Z",
+          "review_deadline": "2026-12-28T19:00:00Z",
+          "claim_deadline": "2027-01-04T19:00:00Z",
+          "timezone": "Asia/Almaty",
+          "economy_version": "economy-v1",
+          "is_member": true
+        },
+        "confirmed_xp": 0,
+        "level": 0,
+        "xp_to_next": 200,
+        "wallet_balance": 0,
+        "pass_progress": 0.0,
+        "rank": null,
+        "pending_xp": 0,
+        "current_streak": 0,
+        "best_streak": 0,
+        "freeze_remaining": 2,
+        "active_days": 0,
+        "next_reward": {
+          "components": [
+            {
+              "coins": 5,
+              "name": "5 CQ",
+              "type": "coins"
+            }
+          ],
+          "level": 1,
+          "required_total_xp": 200
+        },
+        "unclaimed_gifts_count": 0
+      }
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/profile": {
+    "data": {
+      "employee": {
+        "assessment_at": "2026-09-01T23:59:59Z",
+        "assessment_date_source": "last_review_date",
+        "career_goal": null,
+        "department": "Engineering",
+        "employee_id": "E1",
+        "full_name": "Synthetic Person E1",
+        "grade": "Junior",
+        "hire_date": "2025-01-01",
+        "id": "E1",
+        "last_review_date": "2026-09-01",
+        "manager_id": null,
+        "preferred_language": "ru",
+        "role": "Engineer",
+        "skills": {
+          "S1": 20
+        },
+        "source_goal": null,
+        "source_scale": [
+          0,
+          5
+        ],
+        "source_skills": {
+          "S1": 1
+        },
+        "tenure_months": 21,
+        "work_format": "remote"
+      },
+      "goal": null,
+      "suggested_goal": {
+        "target_role": "Engineer",
+        "target_grade": "Middle"
+      },
+      "goal_source": "suggested",
+      "preferences": {
+        "weekly_minutes": 120,
+        "preferred_formats": [
+          "online",
+          "offline",
+          "self_paced"
+        ],
+        "timezone": "Asia/Almaty"
+      },
+      "progress": {
+        "goal": null,
+        "status": "no_goal",
+        "coverage": null,
+        "assessed_readiness": null,
+        "estimated_readiness": null,
+        "skills": [
+          {
+            "skill_id": "S1",
+            "name": "Synthetic Skill",
+            "assessed_level": 20,
+            "estimated_level": 20,
+            "required_level": null,
+            "weight": null,
+            "gap": null,
+            "contributions": []
+          }
+        ],
+        "assessment_at": "2026-09-01T23:59:59Z",
+        "missing_skill_ids": []
+      },
+      "plan": {
+        "items": [],
+        "total_minutes": 0,
+        "estimated_weeks": 0,
+        "forecast": {
+          "goal": null,
+          "status": "no_goal",
+          "coverage": null,
+          "assessed_readiness": null,
+          "estimated_readiness": null,
+          "skills": [
+            {
+              "skill_id": "S1",
+              "name": "Synthetic Skill",
+              "assessed_level": 20,
+              "estimated_level": 20,
+              "required_level": null,
+              "weight": null,
+              "gap": null,
+              "contributions": []
+            }
+          ],
+          "assessment_at": "2026-09-01T23:59:59Z",
+          "missing_skill_ids": []
+        },
+        "archived_count": 0
+      }
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/plan": {
+    "data": {
+      "items": [],
+      "total_minutes": 0,
+      "estimated_weeks": 0,
+      "forecast": {
+        "goal": null,
+        "status": "no_goal",
+        "coverage": null,
+        "assessed_readiness": null,
+        "estimated_readiness": null,
+        "skills": [
+          {
+            "skill_id": "S1",
+            "name": "Synthetic Skill",
+            "assessed_level": 20,
+            "estimated_level": 20,
+            "required_level": null,
+            "weight": null,
+            "gap": null,
+            "contributions": []
+          }
+        ],
+        "assessment_at": "2026-09-01T23:59:59Z",
+        "missing_skill_ids": []
+      },
+      "archived_count": 0
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/history": {
+    "data": {
+      "items": [
+        {
+          "activity_id": "EV1",
+          "sources": [
+            {
+              "activity_id": "EV1",
+              "assigned_by": "self",
+              "attended_at": null,
+              "completed_at": "2026-09-10T12:00:00Z",
+              "completion_pct": 100,
+              "date": "2026-09-10",
+              "due_date": "2026-09-20",
+              "employee_id": "E1",
+              "event_id": "EV1",
+              "feedback_rating": 4,
+              "origin": "imported",
+              "record_id": "R1",
+              "registered_at": null,
+              "score": 80,
+              "started_at": null,
+              "status": "completed"
+            }
+          ],
+          "status": "completed",
+          "completed_at": "2026-09-10T12:00:00Z",
+          "activity": {
+            "active": true,
+            "available_from": null,
+            "available_until": null,
+            "description": "Synthetic event",
+            "duration_minutes": 120,
+            "ends_at": null,
+            "format": "online",
+            "gains": {
+              "S1": 20
+            },
+            "id": "EV1",
+            "instructions": "Локальная практика по теме «Synthetic Learning».\n\nSynthetic event\n\n1. Выберите рабочую ситуацию по теме.\n2. Опишите исходную проблему и критерий успеха.\n3. Предложите решение и проверьте его на учебном примере.\n4. Запишите результат и ограничения. Отправьте выводы HR для проверки XP.\n\nЭто самостоятельная практика Career Quest, без записи во внешнюю LMS.",
+            "kind": "self_paced",
+            "outcome": "Подготовьте краткий разбор: задача, применённый подход, результат и выводы.",
+            "prerequisites": {},
+            "source": {
+              "description": "Synthetic event",
+              "develops_skills": [
+                {
+                  "gain": 1,
+                  "max_level": 4,
+                  "skill_id": "S1"
+                }
+              ],
+              "duration_hours": 2.0,
+              "event_id": "EV1",
+              "format": "online",
+              "mandatory": true,
+              "prerequisites": {},
+              "target_grades": [
+                "Junior",
+                "Middle",
+                "Senior"
+              ],
+              "target_roles": [
+                "Engineer"
+              ],
+              "title": "Synthetic Learning",
+              "type": "course",
+              "upcoming_sessions": [
+                "2026-10-05"
+              ]
+            },
+            "starts_at": null,
+            "title": "Synthetic Learning"
+          }
+        }
+      ],
+      "total": 1,
+      "page": 1
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/activities": {
+    "data": {
+      "items": [
+        {
+          "active": true,
+          "available_from": null,
+          "available_until": null,
+          "description": "Synthetic event",
+          "duration_minutes": 120,
+          "ends_at": null,
+          "format": "online",
+          "gains": {
+            "S1": 20
+          },
+          "id": "EV1",
+          "instructions": "Локальная практика по теме «Synthetic Learning».\n\nSynthetic event\n\n1. Выберите рабочую ситуацию по теме.\n2. Опишите исходную проблему и критерий успеха.\n3. Предложите решение и проверьте его на учебном примере.\n4. Запишите результат и ограничения. Отправьте выводы HR для проверки XP.\n\nЭто самостоятельная практика Career Quest, без записи во внешнюю LMS.",
+          "kind": "self_paced",
+          "outcome": "Подготовьте краткий разбор: задача, применённый подход, результат и выводы.",
+          "prerequisites": {},
+          "source": {
+            "description": "Synthetic event",
+            "develops_skills": [
+              {
+                "gain": 1,
+                "max_level": 4,
+                "skill_id": "S1"
+              }
+            ],
+            "duration_hours": 2.0,
+            "event_id": "EV1",
+            "format": "online",
+            "mandatory": true,
+            "prerequisites": {},
+            "target_grades": [
+              "Junior",
+              "Middle",
+              "Senior"
+            ],
+            "target_roles": [
+              "Engineer"
+            ],
+            "title": "Synthetic Learning",
+            "type": "course",
+            "upcoming_sessions": [
+              "2026-10-05"
+            ]
+          },
+          "starts_at": null,
+          "title": "Synthetic Learning",
+          "blocked_reason": "ALREADY_IMPORTED_COMPLETE"
+        }
+      ],
+      "total": 1,
+      "page": 1
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/reward-reviews": {
+    "data": {
+      "items": []
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/season": {
+    "data": {
+      "season": {
+        "id": "season_8d8e0f47b4a740daae916c8f21363bad",
+        "name": "Сезон 1. Новый уровень",
+        "status": "active",
+        "starts_at": "2026-09-22T19:00:00Z",
+        "ends_at": "2026-12-21T19:00:00Z",
+        "review_deadline": "2026-12-28T19:00:00Z",
+        "claim_deadline": "2027-01-04T19:00:00Z",
+        "timezone": "Asia/Almaty",
+        "economy_version": "economy-v1",
+        "is_member": true
+      },
+      "confirmed_xp": 0,
+      "level": 0,
+      "xp_to_next": 200,
+      "wallet_balance": 0,
+      "pass_progress": 0.0,
+      "rank": null,
+      "pending_xp": 0,
+      "current_streak": 0,
+      "best_streak": 0,
+      "freeze_remaining": 2,
+      "active_days": 0,
+      "next_reward": {
+        "components": [
+          {
+            "coins": 5,
+            "name": "5 CQ",
+            "type": "coins"
+          }
+        ],
+        "level": 1,
+        "required_total_xp": 200
+      },
+      "unclaimed_gifts_count": 0
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/season/tasks": {
+    "data": {
+      "items": [
+        {
+          "id": "season_8d8e0f47b4a740daae916c8f21363bad:E1:2026-09-23:main",
+          "season_id": "season_8d8e0f47b4a740daae916c8f21363bad",
+          "kind": "main",
+          "game_date": "2026-09-23",
+          "xp": 100,
+          "attempts": 0,
+          "status": "available",
+          "template": "conversion",
+          "template_version": 1,
+          "instructions": "Из 1090 визитов получено 95 заявок. Укажите конверсию в процентах с одним знаком после запятой.",
+          "public_payload": {},
+          "answer_fields": [
+            {
+              "key": "value",
+              "label": "Ответ",
+              "type": "decimal"
+            }
+          ],
+          "attempts_remaining": 3,
+          "explanation": null
+        },
+        {
+          "id": "season_8d8e0f47b4a740daae916c8f21363bad:E1:2026-09-23:bonus",
+          "season_id": "season_8d8e0f47b4a740daae916c8f21363bad",
+          "kind": "bonus",
+          "game_date": "2026-09-23",
+          "xp": 150,
+          "attempts": 0,
+          "status": "available",
+          "template": "transaction_case",
+          "template_version": 1,
+          "instructions": "Найдите сумму всех шести операций и ID клиента с наибольшей суммой. При равенстве выберите меньший ID.",
+          "public_payload": {
+            "rows": [
+              {
+                "customer_id": "C1",
+                "amount": 3800
+              },
+              {
+                "customer_id": "C2",
+                "amount": 1600
+              },
+              {
+                "customer_id": "C3",
+                "amount": 8900
+              },
+              {
+                "customer_id": "C1",
+                "amount": 1600
+              },
+              {
+                "customer_id": "C2",
+                "amount": 5100
+              },
+              {
+                "customer_id": "C3",
+                "amount": 8900
+              }
+            ]
+          },
+          "answer_fields": [
+            {
+              "key": "total",
+              "label": "Общая сумма",
+              "type": "decimal"
+            },
+            {
+              "key": "customer_id",
+              "label": "ID клиента (C1, C2, C3)",
+              "type": "text"
+            }
+          ],
+          "attempts_remaining": 3,
+          "explanation": null
+        }
+      ],
+      "weekly_days": 0,
+      "weekly_required": 5,
+      "weekly_xp": 250,
+      "resets_at": "2026-09-23T19:00:00Z"
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/wallet": {
+    "data": {
+      "balance": 0,
+      "items": [],
+      "total": 0,
+      "page": 1
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/me/rewards": {
+    "data": {
+      "entitlements": [],
+      "orders": []
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/hr/overview": {
+    "data": {
+      "employees": [
+        {
+          "employee_id": "E1",
+          "full_name": "Synthetic Person E1",
+          "department": "Engineering",
+          "role": "Engineer",
+          "grade": "Junior",
+          "goal": null,
+          "coverage": 100.0,
+          "readiness": 100.0,
+          "participated": true
+        },
+        {
+          "employee_id": "E2",
+          "full_name": "Synthetic Person E2",
+          "department": "Engineering",
+          "role": "Engineer",
+          "grade": "Middle",
+          "goal": {
+            "target_grade": "Senior",
+            "target_role": "Engineer"
+          },
+          "coverage": 100.0,
+          "readiness": 100.0,
+          "participated": true
+        }
+      ],
+      "skills": [
+        {
+          "department": "Engineering",
+          "skill_id": "S1",
+          "name": "Synthetic Skill",
+          "required_count": 2,
+          "assessed_count": 2,
+          "missing_count": 0,
+          "gap_count": 0,
+          "employee_ids": [],
+          "gap_share": 0.0,
+          "mean_relative_gap": 0.0,
+          "mean_points_gap": 0.0,
+          "reference": "current_role",
+          "basis": "assessed"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "EV1",
+          "title": "Synthetic Learning",
+          "started": 1,
+          "attended": 0,
+          "completed": 1,
+          "participants": 2,
+          "origins": [
+            "imported"
+          ],
+          "attendance": null
+        }
+      ],
+      "no_goal_count": 1,
+      "uncovered_skills": [],
+      "kpis": {
+        "employees": 2,
+        "goals": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "participation": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1.0
+        },
+        "completion": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "completed_activities": 1,
+        "missing_assessments": 0,
+        "mean_readiness": 100.0,
+        "readiness_count": 2
+      },
+      "date_from": "2026-08-25",
+      "date_to": "2026-09-23"
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/hr/employees": {
+    "data": {
+      "items": [
+        {
+          "employee_id": "E1",
+          "full_name": "Synthetic Person E1",
+          "department": "Engineering",
+          "role": "Engineer",
+          "grade": "Junior",
+          "goal": null,
+          "coverage": 100.0,
+          "readiness": 100.0,
+          "participated": true
+        },
+        {
+          "employee_id": "E2",
+          "full_name": "Synthetic Person E2",
+          "department": "Engineering",
+          "role": "Engineer",
+          "grade": "Middle",
+          "goal": {
+            "target_grade": "Senior",
+            "target_role": "Engineer"
+          },
+          "coverage": 100.0,
+          "readiness": 100.0,
+          "participated": true
+        }
+      ],
+      "total": 2,
+      "page": 1
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/hr/seasons": {
+    "data": {
+      "items": [
+        {
+          "id": "season_8d8e0f47b4a740daae916c8f21363bad",
+          "name": "Сезон 1. Новый уровень",
+          "status": "active",
+          "starts_at": "2026-09-22T19:00:00Z",
+          "ends_at": "2026-12-21T19:00:00Z",
+          "review_deadline": "2026-12-28T19:00:00Z",
+          "claim_deadline": "2027-01-04T19:00:00Z",
+          "timezone": "Asia/Almaty",
+          "economy_version": "economy-v1",
+          "is_member": false,
+          "employee_ids": [
+            "E1",
+            "E2"
+          ],
+          "virtual_budget_kzt": 2450000
+        }
+      ]
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/hr/reward-reviews": {
+    "data": {
+      "items": []
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/hr/reward-orders": {
+    "data": {
+      "items": []
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  },
+  "/api/hr/shop/items": {
+    "data": {
+      "items": [
+        {
+          "active": true,
+          "category": "Путешествия и впечатления",
+          "coin_price": 10000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Сертификат на зарубежную путёвку. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_abroad_trip",
+          "image_asset": "Путешествия и впечатления",
+          "name": "Сертификат на зарубежную путёвку",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 1000000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 3000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Кондиционер, комплект по условиям SKU. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_air_conditioner",
+          "image_asset": "Техника",
+          "name": "Кондиционер, комплект по условиям SKU",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 300000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 1500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Очиститель воздуха. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_air_purifier",
+          "image_asset": "Техника",
+          "name": "Очиститель воздуха",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 150000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 800,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Аэрогриль. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_airfryer",
+          "image_asset": "Кухня",
+          "name": "Аэрогриль",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 80000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Дом и уют",
+          "coin_price": 300,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Комплект постельного белья. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_bedding",
+          "image_asset": "Дом и уют",
+          "name": "Комплект постельного белья",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 30000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Блендер с набором насадок. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_blender",
+          "image_asset": "Кухня",
+          "name": "Блендер с набором насадок",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 50000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 3000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Автоматическая кофемашина. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_coffee_machine",
+          "image_asset": "Кухня",
+          "name": "Автоматическая кофемашина",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 300000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Гаджеты",
+          "coin_price": 3500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Игровая консоль. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_console",
+          "image_asset": "Гаджеты",
+          "name": "Игровая консоль",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 350000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 3500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Посудомоечная машина. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_dishwasher",
+          "image_asset": "Кухня",
+          "name": "Посудомоечная машина",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 350000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Путешествия и впечатления",
+          "coin_price": 6000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Путёвка на отдых по Казахстану. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_domestic_trip",
+          "image_asset": "Путешествия и впечатления",
+          "name": "Путёвка на отдых по Казахстану",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 600000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 3500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Сушильная машина. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_dryer",
+          "image_asset": "Техника",
+          "name": "Сушильная машина",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 350000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 5000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Большой холодильник. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_fridge",
+          "image_asset": "Кухня",
+          "name": "Большой холодильник",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 500000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Дом и уют",
+          "coin_price": 15000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Сертификат на обустройство дома. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_home_upgrade",
+          "image_asset": "Дом и уют",
+          "name": "Сертификат на обустройство дома",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 1500000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 2500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Индукционная варочная панель. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_induction",
+          "image_asset": "Кухня",
+          "name": "Индукционная варочная панель",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 250000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Гаджеты",
+          "coin_price": 7000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "iPhone, модель и память фиксируются в SKU. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_iphone",
+          "image_asset": "Гаджеты",
+          "name": "iPhone, модель и память фиксируются в SKU",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 700000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Гаджеты",
+          "coin_price": 6000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Ноутбук для дома и творчества. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_laptop",
+          "image_asset": "Гаджеты",
+          "name": "Ноутбук для дома и творчества",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 600000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Гаджеты",
+          "coin_price": 9000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "MacBook, конфигурация фиксируется в SKU. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_macbook",
+          "image_asset": "Гаджеты",
+          "name": "MacBook, конфигурация фиксируется в SKU",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 900000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Дом и уют",
+          "coin_price": 10000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Массажное кресло. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_massage_chair",
+          "image_asset": "Дом и уют",
+          "name": "Массажное кресло",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 1000000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Дом и уют",
+          "coin_price": 3000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Матрас и комплект домашнего текстиля. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_mattress",
+          "image_asset": "Дом и уют",
+          "name": "Матрас и комплект домашнего текстиля",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 300000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 1000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Микроволновая печь. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_microwave",
+          "image_asset": "Кухня",
+          "name": "Микроволновая печь",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 100000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Кухня",
+          "coin_price": 900,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Мультиварка. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_multicooker",
+          "image_asset": "Кухня",
+          "name": "Мультиварка",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 90000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Дом и уют",
+          "coin_price": 50,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Подарочный блокнот и ручка. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_notebook",
+          "image_asset": "Дом и уют",
+          "name": "Подарочный блокнот и ручка",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 5000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 2500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Робот-пылесос с влажной уборкой. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_robot_vacuum",
+          "image_asset": "Техника",
+          "name": "Робот-пылесос с влажной уборкой",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 250000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Дом и уют",
+          "coin_price": 6000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Сертификат на диван / мебель для гостиной. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_sofa",
+          "image_asset": "Дом и уют",
+          "name": "Сертификат на диван / мебель для гостиной",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 600000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Путешествия и впечатления",
+          "coin_price": 1500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Сертификат на SPA-выходные. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_spa",
+          "image_asset": "Путешествия и впечатления",
+          "name": "Сертификат на SPA-выходные",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 150000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Гаджеты",
+          "coin_price": 4000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Планшет с аксессуарами. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_tablet",
+          "image_asset": "Гаджеты",
+          "name": "Планшет с аксессуарами",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 400000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Дом и уют",
+          "coin_price": 100,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Термокружка / термос. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_thermos",
+          "image_asset": "Дом и уют",
+          "name": "Термокружка / термос",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 10000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 3000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Телевизор, категория 55 дюймов. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_tv_55",
+          "image_asset": "Техника",
+          "name": "Телевизор, категория 55 дюймов",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 300000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 5000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Телевизор, категория 65 дюймов. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_tv_65",
+          "image_asset": "Техника",
+          "name": "Телевизор, категория 65 дюймов",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 500000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 3000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Стиральная машина. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_washer",
+          "image_asset": "Техника",
+          "name": "Стиральная машина",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 300000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Техника",
+          "coin_price": 6500,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Стирально-сушильная машина. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_washer_dryer",
+          "image_asset": "Техника",
+          "name": "Стирально-сушильная машина",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 650000,
+          "version": 1,
+          "available_stock": 4
+        },
+        {
+          "active": true,
+          "category": "Путешествия и впечатления",
+          "coin_price": 3000,
+          "delivered": 0,
+          "delivery_terms": "Тестовая выдача сертификата в HR-службе. Монтаж, доставка, бронирование и платежи не выполняются.",
+          "description": "Путёвка на короткую поездку для двоих. Учебный SKU: сертификат на эту категорию в пределах указанного лимита. Конкретная модель не обещается.",
+          "id": "shop_weekend_trip",
+          "image_asset": "Путешествия и впечатления",
+          "name": "Путёвка на короткую поездку для двоих",
+          "reserved": 0,
+          "shop_visible": true,
+          "stock_total": 4,
+          "unit_budget_kzt": 300000,
+          "version": 1,
+          "available_stock": 4
+        }
+      ]
+    },
+    "meta": {
+      "state_revision": 0,
+      "server_time": "2026-09-23T07:00:00Z"
+    }
+  }
+}

@@ -91,23 +91,7 @@ class Brand extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF365AAF), Color(0xFF633C83)],
-          ),
-          border: Border.all(color: blue.withValues(alpha: .5)),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(color: blue.withValues(alpha: .16), blurRadius: 18),
-          ],
-        ),
-        child: const Icon(Icons.explore_rounded, color: pink, size: 23),
-      ),
+      const QuestMark(),
       if (!compact) ...[
         const SizedBox(width: 11),
         const Flexible(
@@ -127,6 +111,91 @@ class Brand extends StatelessWidget {
       ],
     ],
   );
+}
+
+/// Career Quest mark: a mountain route leading to a lit summit.
+/// Kept as a vector painter so the logo stays crisp at every Flutter scale.
+class QuestMark extends StatelessWidget {
+  const QuestMark({super.key, this.size = 38});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    padding: EdgeInsets.all(size * .15),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF315BB7), Color(0xFF6F3F91)],
+      ),
+      border: Border.all(color: blue.withValues(alpha: .58)),
+      borderRadius: BorderRadius.circular(size * .32),
+      boxShadow: [
+        BoxShadow(
+          color: violet.withValues(alpha: .2),
+          blurRadius: size * .55,
+          spreadRadius: -size * .2,
+        ),
+      ],
+    ),
+    child: const CustomPaint(painter: _QuestMarkPainter()),
+  );
+}
+
+class _QuestMarkPainter extends CustomPainter {
+  const _QuestMarkPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final mountain = Paint()
+      ..color = ink
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * .075
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final mountains = Path()
+      ..moveTo(size.width * .08, size.height * .71)
+      ..lineTo(size.width * .35, size.height * .39)
+      ..lineTo(size.width * .51, size.height * .57)
+      ..lineTo(size.width * .70, size.height * .25)
+      ..lineTo(size.width * .92, size.height * .71);
+    canvas.drawPath(mountains, mountain);
+
+    final route = Paint()
+      ..color = pink
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * .1
+      ..strokeCap = StrokeCap.round;
+    final trail = Path()
+      ..moveTo(size.width * .19, size.height * .84)
+      ..cubicTo(
+        size.width * .38,
+        size.height * .68,
+        size.width * .57,
+        size.height * .85,
+        size.width * .59,
+        size.height * .63,
+      )
+      ..cubicTo(
+        size.width * .60,
+        size.height * .50,
+        size.width * .67,
+        size.height * .44,
+        size.width * .70,
+        size.height * .32,
+      );
+    canvas.drawPath(trail, route);
+    canvas.drawCircle(
+      Offset(size.width * .70, size.height * .25),
+      size.width * .085,
+      Paint()..color = pink,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class SectionTitle extends StatelessWidget {
@@ -187,7 +256,7 @@ class Surface extends StatelessWidget {
         colors: [Color.alphaBlend(blue.withValues(alpha: .065), color), color],
       ),
       border: Border.all(color: line.withValues(alpha: .9)),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: .12),
@@ -219,7 +288,7 @@ class Tag extends StatelessWidget {
     decoration: BoxDecoration(
       color: background,
       border: Border.all(color: color.withValues(alpha: .2)),
-      borderRadius: BorderRadius.circular(9),
+      borderRadius: BorderRadius.circular(12),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,

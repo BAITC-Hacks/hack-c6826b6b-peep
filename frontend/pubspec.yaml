@@ -17,3 +17,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/career_landscape.png
+    - assets/images/career_city_reference.png
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf

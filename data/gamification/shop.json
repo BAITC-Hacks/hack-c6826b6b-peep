@@ -1,0 +1,226 @@
+[
+  {
+    "id": "shop_notebook",
+    "name": "Подарочный блокнот и ручка",
+    "category": "Дом и уют",
+    "coin_price": 50,
+    "unit_budget_kzt": 5000
+  },
+  {
+    "id": "shop_thermos",
+    "name": "Термокружка / термос",
+    "category": "Дом и уют",
+    "coin_price": 100,
+    "unit_budget_kzt": 10000
+  },
+  {
+    "id": "shop_bedding",
+    "name": "Комплект постельного белья",
+    "category": "Дом и уют",
+    "coin_price": 300,
+    "unit_budget_kzt": 30000
+  },
+  {
+    "id": "shop_blender",
+    "name": "Блендер с набором насадок",
+    "category": "Кухня",
+    "coin_price": 500,
+    "unit_budget_kzt": 50000
+  },
+  {
+    "id": "shop_airfryer",
+    "name": "Аэрогриль",
+    "category": "Кухня",
+    "coin_price": 800,
+    "unit_budget_kzt": 80000
+  },
+  {
+    "id": "shop_multicooker",
+    "name": "Мультиварка",
+    "category": "Кухня",
+    "coin_price": 900,
+    "unit_budget_kzt": 90000
+  },
+  {
+    "id": "shop_microwave",
+    "name": "Микроволновая печь",
+    "category": "Кухня",
+    "coin_price": 1000,
+    "unit_budget_kzt": 100000
+  },
+  {
+    "id": "shop_air_purifier",
+    "name": "Очиститель воздуха",
+    "category": "Техника",
+    "coin_price": 1500,
+    "unit_budget_kzt": 150000
+  },
+  {
+    "id": "shop_robot_vacuum",
+    "name": "Робот-пылесос с влажной уборкой",
+    "category": "Техника",
+    "coin_price": 2500,
+    "unit_budget_kzt": 250000
+  },
+  {
+    "id": "shop_induction",
+    "name": "Индукционная варочная панель",
+    "category": "Кухня",
+    "coin_price": 2500,
+    "unit_budget_kzt": 250000
+  },
+  {
+    "id": "shop_coffee_machine",
+    "name": "Автоматическая кофемашина",
+    "category": "Кухня",
+    "coin_price": 3000,
+    "unit_budget_kzt": 300000
+  },
+  {
+    "id": "shop_tv_55",
+    "name": "Телевизор, категория 55 дюймов",
+    "category": "Техника",
+    "coin_price": 3000,
+    "unit_budget_kzt": 300000
+  },
+  {
+    "id": "shop_washer",
+    "name": "Стиральная машина",
+    "category": "Техника",
+    "coin_price": 3000,
+    "unit_budget_kzt": 300000
+  },
+  {
+    "id": "shop_air_conditioner",
+    "name": "Кондиционер, комплект по условиям SKU",
+    "category": "Техника",
+    "coin_price": 3000,
+    "unit_budget_kzt": 300000
+  },
+  {
+    "id": "shop_mattress",
+    "name": "Матрас и комплект домашнего текстиля",
+    "category": "Дом и уют",
+    "coin_price": 3000,
+    "unit_budget_kzt": 300000
+  },
+  {
+    "id": "shop_dryer",
+    "name": "Сушильная машина",
+    "category": "Техника",
+    "coin_price": 3500,
+    "unit_budget_kzt": 350000
+  },
+  {
+    "id": "shop_dishwasher",
+    "name": "Посудомоечная машина",
+    "category": "Кухня",
+    "coin_price": 3500,
+    "unit_budget_kzt": 350000
+  },
+  {
+    "id": "shop_console",
+    "name": "Игровая консоль",
+    "category": "Гаджеты",
+    "coin_price": 3500,
+    "unit_budget_kzt": 350000
+  },
+  {
+    "id": "shop_tablet",
+    "name": "Планшет с аксессуарами",
+    "category": "Гаджеты",
+    "coin_price": 4000,
+    "unit_budget_kzt": 400000
+  },
+  {
+    "id": "shop_tv_65",
+    "name": "Телевизор, категория 65 дюймов",
+    "category": "Техника",
+    "coin_price": 5000,
+    "unit_budget_kzt": 500000
+  },
+  {
+    "id": "shop_fridge",
+    "name": "Большой холодильник",
+    "category": "Кухня",
+    "coin_price": 5000,
+    "unit_budget_kzt": 500000
+  },
+  {
+    "id": "shop_laptop",
+    "name": "Ноутбук для дома и творчества",
+    "category": "Гаджеты",
+    "coin_price": 6000,
+    "unit_budget_kzt": 600000
+  },
+  {
+    "id": "shop_sofa",
+    "name": "Сертификат на диван / мебель для гостиной",
+    "category": "Дом и уют",
+    "coin_price": 6000,
+    "unit_budget_kzt": 600000
+  },
+  {
+    "id": "shop_washer_dryer",
+    "name": "Стирально-сушильная машина",
+    "category": "Техника",
+    "coin_price": 6500,
+    "unit_budget_kzt": 650000
+  },
+  {
+    "id": "shop_iphone",
+    "name": "iPhone, модель и память фиксируются в SKU",
+    "category": "Гаджеты",
+    "coin_price": 7000,
+    "unit_budget_kzt": 700000
+  },
+  {
+    "id": "shop_macbook",
+    "name": "MacBook, конфигурация фиксируется в SKU",
+    "category": "Гаджеты",
+    "coin_price": 9000,
+    "unit_budget_kzt": 900000
+  },
+  {
+    "id": "shop_massage_chair",
+    "name": "Массажное кресло",
+    "category": "Дом и уют",
+    "coin_price": 10000,
+    "unit_budget_kzt": 1000000
+  },
+  {
+    "id": "shop_spa",
+    "name": "Сертификат на SPA-выходные",
+    "category": "Путешествия и впечатления",
+    "coin_price": 1500,
+    "unit_budget_kzt": 150000
+  },
+  {
+    "id": "shop_weekend_trip",
+    "name": "Путёвка на короткую поездку для двоих",
+    "category": "Путешествия и впечатления",
+    "coin_price": 3000,
+    "unit_budget_kzt": 300000
+  },
+  {
+    "id": "shop_domestic_trip",
+    "name": "Путёвка на отдых по Казахстану",
+    "category": "Путешествия и впечатления",
+    "coin_price": 6000,
+    "unit_budget_kzt": 600000
+  },
+  {
+    "id": "shop_abroad_trip",
+    "name": "Сертификат на зарубежную путёвку",
+    "category": "Путешествия и впечатления",
+    "coin_price": 10000,
+    "unit_budget_kzt": 1000000
+  },
+  {
+    "id": "shop_home_upgrade",
+    "name": "Сертификат на обустройство дома",
+    "category": "Дом и уют",
+    "coin_price": 15000,
+    "unit_budget_kzt": 1500000
+  }
+]

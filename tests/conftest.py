@@ -9,6 +9,14 @@ import pytest
 from backend.main import create_app
 
 
+@pytest.fixture(autouse=True)
+def local_credentials(monkeypatch):
+    monkeypatch.setenv('DEMO_EMPLOYEE_PASSWORD','Employee123!')
+    monkeypatch.setenv('DEMO_COLLEAGUE_PASSWORD','Colleague123!')
+    monkeypatch.setenv('DEMO_HR_PASSWORD','Hr123!')
+    monkeypatch.setenv('AI_MODE','template')
+
+
 HISTORY_FIELDS = [
     'record_id', 'employee_id', 'event_id', 'date', 'due_date', 'status',
     'completion_pct', 'score', 'feedback_rating', 'assigned_by',
@@ -128,3 +136,36 @@ def commit(client, headers, preview_response):
     assert response.status_code == 201, response.text
     assert response.json()['committed'] is True
     return response
+
+
+def mutate(client,headers,method,path,body=None,revision=None,key=None):
+    import uuid
+    if revision is None:
+        revision=client.get('/api/reference',headers=headers).json()['meta']['state_revision']
+    h={**headers,'Idempotency-Key':key or str(uuid.uuid4())}
+    if method=='DELETE':
+        return client.request(method,path,headers=h,params={'expected_revision':revision,**(body or {})})
+    return client.request(method,path,headers=h,json={'expected_revision':revision,**(body or {})})
+
+
+@pytest.fixture
+def scenario(kit):
+    from copy import deepcopy
+    from datetime import datetime, timezone
+    clock=[datetime(2026,9,23,7,tzinfo=timezone.utc)]
+    with TestClient(create_app(*kit,clock=lambda:clock[0])) as c:
+        engine=c.app.state.engine
+        with engine.transaction() as s:
+            s['imported_history']=[]
+            s['skills']={k:{'skill_id':k,'name':k,'type':'hard','category':'test','description':'test'} for k in ['SQL','Analytics','Communication']}
+            for e in s['employees'].values():
+                e['skills']={'SQL':60,'Analytics':40,'Communication':50}
+                e['source_goal']=None
+            s['roles']={'Engineer|'+grade:{'role_id':'Engineer','grade_id':grade,'requirements':{
+                'SQL':{'level':80,'weight':3},'Analytics':{'level':60,'weight':2},'Communication':{'level':60,'weight':1}}} for grade in ['Junior','Middle','Senior','Lead']}
+            s['goals']={'E1':{'target_role':'Engineer','target_grade':'Middle'}}
+            proto=next(iter(s['activities'].values()))
+            s['activities']={k:{**deepcopy(proto),'id':k,'title':k,'format':'self_paced','duration_minutes':minutes,'gains':{skill:10},'prerequisites':{}} for k,skill,minutes in [('sql','SQL',60),('analytics','Analytics',45),('communication','Communication',45),('extra','SQL',30)]}
+            # extra is manual only; three recommendations are the normative example.
+            s['activities']['extra']['available_from']='2026-11-01T00:00:00Z'
+        yield c,engine,clock

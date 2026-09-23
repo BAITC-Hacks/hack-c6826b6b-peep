@@ -1,14 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-
-class UploadFile {
-  const UploadFile(this.name, this.bytes);
-  final String name;
-  final Uint8List bytes;
-}
 
 class CareerApi {
   CareerApi({http.Client? client, String? baseUrl})
@@ -19,13 +14,22 @@ class CareerApi {
   final http.Client _client;
   final String baseUrl;
   String? token;
+  int stateRevision = 0;
+  final Map<String, String> _pendingKeys = {};
   VoidCallback? onUnauthorized;
 
   Uri _uri(String path) {
-    final origin = baseUrl.isNotEmpty
-        ? baseUrl
-        : (kIsWeb ? Uri.base.origin : 'http://127.0.0.1:8000');
+    final origin = baseUrl.isNotEmpty ? baseUrl : _defaultOrigin();
     return Uri.parse('$origin$path');
+  }
+
+  String _defaultOrigin() {
+    if (!kIsWeb) return 'http://127.0.0.1:8000';
+    // A release build is served by FastAPI and uses the same origin. During
+    // `flutter run`, the web dev server is separate, so use the local API
+    // without requiring an easy-to-forget --dart-define flag.
+    if (kDebugMode) return 'http://127.0.0.1:8000';
+    return Uri.base.origin;
   }
 
   Map<String, String> get _headers => {
@@ -40,8 +44,59 @@ class CareerApi {
     Map<String, dynamic>? body,
   ]) async {
     final request = http.Request(method, _uri(path))..headers.addAll(_headers);
-    if (body != null) request.body = jsonEncode(body);
-    return _send(request, isLogin: path == '/api/auth/login');
+    final mutation =
+        method != 'GET' &&
+        !path.startsWith('/api/auth/') &&
+        path != '/api/me/simulations' &&
+        path != '/api/me/assistant/explain';
+    final payload = body == null
+        ? <String, dynamic>{}
+        : Map<String, dynamic>.from(body);
+    if (mutation && method != 'DELETE') {
+      payload.putIfAbsent('expected_revision', () => stateRevision);
+    }
+    if (body != null || mutation && method != 'DELETE') {
+      request.body = jsonEncode(payload);
+    }
+    final signature = '$method:$path:${request.body}';
+    if (mutation) {
+      request.headers['Idempotency-Key'] = _pendingKeys.putIfAbsent(
+        signature,
+        _uuid,
+      );
+    }
+    try {
+      final result = await _send(request, isLogin: path == '/api/auth/login');
+      _pendingKeys.remove(signature);
+      return result;
+    } on ApiException catch (e) {
+      if (e.statusCode != null) _pendingKeys.remove(signature);
+      rethrow;
+    }
+  }
+
+  String _uuid() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  Future<Uint8List> download(String path) async {
+    final usedToken = token;
+    final response = await _client
+        .get(_uri(path), headers: _headers)
+        .timeout(const Duration(seconds: 30));
+    if (response.statusCode == 401 && token == usedToken) {
+      token = null;
+      onUnauthorized?.call();
+    }
+    if (response.statusCode != 200) {
+      throw ApiException('Не удалось скачать файл', response.statusCode);
+    }
+    return response.bodyBytes;
   }
 
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -50,6 +105,8 @@ class CareerApi {
       'password': password,
     });
     token = result['token'] as String;
+    stateRevision = 0;
+    _pendingKeys.clear();
     return Map<String, dynamic>.from(result['user']);
   }
 
@@ -57,39 +114,9 @@ class CareerApi {
     // Capture the old Authorization header before removing local access.
     final revocation = request('POST', '/api/auth/logout');
     token = null;
+    stateRevision = 0;
+    _pendingKeys.clear();
     await revocation;
-  }
-
-  Future<Map<String, dynamic>> previewImport({
-    UploadFile? employees,
-    UploadFile? history,
-    required String policy,
-  }) {
-    final request = http.MultipartRequest(
-      'POST',
-      _uri('/api/hr/import/preview'),
-    );
-    if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    request.fields['conflict_policy'] = policy;
-    if (employees != null) {
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'employees_file',
-          employees.bytes,
-          filename: employees.name,
-        ),
-      );
-    }
-    if (history != null) {
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'history_file',
-          history.bytes,
-          filename: history.name,
-        ),
-      );
-    }
-    return _send(request);
   }
 
   Future<Map<String, dynamic>> _send(
@@ -114,12 +141,16 @@ class CareerApi {
           token = null;
           onUnauthorized?.call();
         }
-        final detail = data['detail'];
+        final detail = data['error']?['message'] ?? data['detail'];
         throw ApiException(
           detail is String ? detail : 'Не удалось выполнить действие. Проверьте данные и попробуйте ещё раз.',
           response.statusCode,
+          data['error']?['code'],
         );
       }
+      final revision = data['meta']?['state_revision'];
+      if (revision is int) stateRevision = max(stateRevision, revision);
+      if (data['data'] is Map) return Map<String, dynamic>.from(data['data']);
       return data;
     } on TimeoutException {
       throw ApiException(
@@ -127,7 +158,7 @@ class CareerApi {
       );
     } on http.ClientException {
       throw ApiException(
-        'Не удалось соединиться. Проверьте подключение и повторите попытку.',
+        'Сервис входа сейчас недоступен. Перезапустите приложение и попробуйте снова.',
       );
     } on FormatException {
       throw ApiException('Не удалось прочитать ответ. Попробуйте ещё раз.');
@@ -138,9 +169,10 @@ class CareerApi {
 }
 
 class ApiException implements Exception {
-  ApiException(this.message, [this.statusCode]);
+  ApiException(this.message, [this.statusCode, this.code]);
   final String message;
   final int? statusCode;
+  final String? code;
   @override
   String toString() => message;
 }

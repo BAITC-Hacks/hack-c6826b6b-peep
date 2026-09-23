@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:career_quest/core/api.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,103 +7,92 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
-  test('Slow logout clears old access immediately without clearing a newer session', () async {
+  test('Slow logout cannot clear a newer session', () async {
     final pending = Completer<http.Response>();
     final api = CareerApi(
       baseUrl: 'http://test',
-      client: MockClient((request) async {
-        expect(request.headers['Authorization'], 'Bearer old-token');
-        return pending.future;
-      }),
+      client: MockClient((r) async => pending.future),
     );
     addTearDown(api.dispose);
-    api.token = 'old-token';
+    api.token = 'old';
     final logout = api.logout();
     expect(api.token, isNull);
-    api.token = 'new-token';
+    api.token = 'new';
     pending.complete(http.Response('{}', 200));
     await logout;
-    expect(api.token, 'new-token');
+    expect(api.token, 'new');
   });
-
-  test('A stale 401 cannot clear a newly authenticated session', () async {
+  test('Stale unauthorized response cannot clear another account', () async {
     final pending = Completer<http.Response>();
-    var unauthorized = false;
+    var expired = false;
     final api = CareerApi(
       baseUrl: 'http://test',
-      client: MockClient((request) async => pending.future),
+      client: MockClient((r) async => pending.future),
     );
     addTearDown(api.dispose);
-    api.token = 'old-token';
-    api.onUnauthorized = () => unauthorized = true;
-    final previous = api.get('/api/me/profile');
-    api.token = 'new-token';
-    final assertion = expectLater(previous, throwsA(isA<ApiException>()));
-    pending.complete(http.Response('{"detail":"expired"}', 401));
+    api.token = 'old';
+    api.onUnauthorized = () => expired = true;
+    final request = api.get('/api/me/profile');
+    api.token = 'new';
+    final assertion = expectLater(request, throwsA(isA<ApiException>()));
+    pending.complete(http.Response('{}', 401));
     await assertion;
-    expect(api.token, 'new-token');
-    expect(unauthorized, isFalse);
+    expect(api.token, 'new');
+    expect(expired, isFalse);
   });
-
   test(
-    'Import sends original file bytes, field names, conflict policy and token',
+    'Mutations include revision and UUID, and consume response envelope',
     () async {
+      var calls = 0;
       final api = CareerApi(
         baseUrl: 'http://test',
-        client: MockClient((request) async {
-          expect(request.url.path, '/api/hr/import/preview');
-          expect(request.headers['Authorization'], 'Bearer hr-token');
-          expect(
-            request.headers['content-type'],
-            contains('multipart/form-data'),
+        client: MockClient((r) async {
+          if (calls++ > 0) {
+            expect(jsonDecode(r.body)['expected_revision'], 7);
+            expect(
+              r.headers['Idempotency-Key'],
+              matches(RegExp(r'^[a-f0-9-]{36}$')),
+            );
+            expect(r.headers['Authorization'], 'Bearer session');
+          }
+          return http.Response(
+            jsonEncode({
+              'data': {'saved': true},
+              'meta': {'state_revision': 7},
+            }),
+            200,
           );
-          expect(
-            request.body,
-            contains('name="employees_file"; filename="judge.json"'),
-          );
-          expect(
-            request.body,
-            contains('name="history_file"; filename="history.csv"'),
-          );
-          expect(request.body, contains('name="conflict_policy"'));
-          expect(request.body, contains('replace'));
-          expect(request.body, contains('{"employees":[]}'));
-          return http.Response('{"preview_id":"p1"}', 200);
         }),
       );
-      api.token = 'hr-token';
       addTearDown(api.dispose);
-      final result = await api.previewImport(
-        employees: UploadFile(
-          'judge.json',
-          Uint8List.fromList(utf8.encode('{"employees":[]}')),
-        ),
-        history: UploadFile(
-          'history.csv',
-          Uint8List.fromList(utf8.encode('record_id,employee_id')),
-        ),
-        policy: 'replace',
+      api.token = 'session';
+      await api.get('/api/me/profile');
+      expect(api.stateRevision, 7);
+      expect(
+        await api.request('POST', '/api/me/plan/items', {'activity_id': 'sql'}),
+        {'saved': true},
       );
-      expect(result['preview_id'], 'p1');
     },
   );
-  test('Conflict preserves session and returns validation message', () async {
-    var unauthorized = false;
+  test('Business conflict has code and preserves session', () async {
     final api = CareerApi(
       baseUrl: 'http://test',
       client: MockClient(
-        (request) async =>
-            http.Response(jsonEncode({'detail': 'ID conflict: E0001'}), 409),
+        (r) async => http.Response(
+          jsonEncode({
+            'error': {'code': 'STALE_STATE', 'message': 'Обновите данные'},
+          }),
+          409,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
       ),
     );
-    api.token = 'hr-token';
-    api.onUnauthorized = () => unauthorized = true;
     addTearDown(api.dispose);
+    api.token = 'session';
     await expectLater(
-      api.request('POST', '/api/hr/import/commit', {'preview_id': 'stale'}),
-      throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 409)),
+      api.request('POST', '/api/me/plan/items', {'activity_id': 'sql'}),
+      throwsA(isA<ApiException>().having((e) => e.code, 'code', 'STALE_STATE')),
     );
-    expect(unauthorized, isFalse);
-    expect(api.token, 'hr-token');
+    expect(api.token, 'session');
   });
 }

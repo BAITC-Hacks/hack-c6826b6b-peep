@@ -29,7 +29,7 @@ class CareerQuestApp extends StatelessWidget {
       ),
       scaffoldBackgroundColor: Colors.transparent,
       canvasColor: panel,
-      fontFamily: 'sans-serif',
+      fontFamily: 'Inter',
       textTheme: const TextTheme(
         bodySmall: TextStyle(color: muted, fontSize: 12, height: 1.5),
         bodyMedium: TextStyle(color: ink, fontSize: 14, height: 1.5),
@@ -61,15 +61,15 @@ class CareerQuestApp extends StatelessWidget {
           vertical: 18,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: line),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: line),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: blue, width: 1.5),
         ),
       ),
@@ -83,7 +83,7 @@ class CareerQuestApp extends StatelessWidget {
           elevation: 3,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 19),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         ),
@@ -94,7 +94,7 @@ class CareerQuestApp extends StatelessWidget {
           side: const BorderSide(color: Color(0xFF8173AF)),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
@@ -110,7 +110,7 @@ class CareerQuestApp extends StatelessWidget {
         selectedColor: const Color(0xFF393157),
         labelStyle: const TextStyle(color: ink, fontSize: 12),
         side: const BorderSide(color: line),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: panel,
@@ -158,6 +158,7 @@ class CareerQuestApp extends StatelessWidget {
         textStyle: const TextStyle(color: ink, fontSize: 12),
       ),
     ),
+    initialRoute: '/',
     home: Workspace(api: api),
   );
 }

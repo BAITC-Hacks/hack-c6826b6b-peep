@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/api.dart';
+import '../widgets/landing_sections.dart';
 import '../widgets/ui.dart';
 
 class LoginPage extends StatefulWidget {
@@ -24,6 +27,24 @@ class _LoginPageState extends State<LoginPage> {
   bool obscure = true;
   String? error;
   String selected = '';
+  final _topKey = GlobalKey();
+  final _loginKey = GlobalKey();
+  final _benefitsKey = GlobalKey();
+  final _stepsKey = GlobalKey();
+  final _faqKey = GlobalKey();
+
+  void _scrollTo(GlobalKey key) {
+    final target = key.currentContext;
+    if (target == null) return;
+    Scrollable.ensureVisible(
+      target,
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 450),
+      curve: Curves.easeInOutCubic,
+      alignment: .04,
+    );
+  }
 
   @override
   void dispose() {
@@ -36,8 +57,7 @@ class _LoginPageState extends State<LoginPage> {
     if (busy) return;
     if (username.text.trim().isEmpty || password.text.isEmpty) {
       setState(
-        () => error =
-            'Введите логин и пароль или выберите демонстрационный аккаунт.',
+        () => error = 'Введите логин и пароль или выберите подходящий профиль.',
       );
       return;
     }
@@ -71,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _header(wide),
+                      KeyedSubtree(key: _topKey, child: _header(wide)),
                       const SizedBox(height: 24),
                       if (wide)
                         Row(
@@ -79,23 +99,29 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             Expanded(flex: 7, child: _hero(true)),
                             const SizedBox(width: 26),
-                            Expanded(flex: 5, child: _form(true)),
+                            Expanded(
+                              flex: 5,
+                              child: KeyedSubtree(
+                                key: _loginKey,
+                                child: _form(true),
+                              ),
+                            ),
                           ],
                         )
                       else ...[
                         _hero(false),
                         const SizedBox(height: 20),
-                        _form(false),
+                        KeyedSubtree(key: _loginKey, child: _form(false)),
                       ],
-                      const SizedBox(height: 25),
-                      Text(
-                        'CAREER QUEST  ·  ДЕМО ДЛЯ HALYK BANK',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: muted.withValues(alpha: .8),
-                          fontSize: 10,
-                          letterSpacing: 1.5,
-                        ),
+                      LandingSections(
+                        benefitsKey: _benefitsKey,
+                        stepsKey: _stepsKey,
+                        faqKey: _faqKey,
+                        onStart: () => _scrollTo(_loginKey),
+                        onBenefits: () => _scrollTo(_benefitsKey),
+                        onSteps: () => _scrollTo(_stepsKey),
+                        onFaq: () => _scrollTo(_faqKey),
+                        onTop: () => _scrollTo(_topKey),
                       ),
                     ],
                   ),
@@ -109,31 +135,54 @@ class _LoginPageState extends State<LoginPage> {
   );
 
   Widget _header(bool wide) => Container(
-    padding: EdgeInsets.symmetric(horizontal: wide ? 26 : 17, vertical: 16),
+    constraints: const BoxConstraints(minHeight: 68),
+    padding: EdgeInsets.fromLTRB(wide ? 4 : 2, 8, wide ? 4 : 2, 14),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xE5131D3D), Color(0xB8262750)],
-      ),
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: line),
+      border: Border(bottom: BorderSide(color: line.withValues(alpha: .65))),
     ),
     child: Row(
       children: [
         const Expanded(child: Brand(light: true)),
-        if (wide) ...[
-          const Text(
-            'ТВОЙ ПУТЬ. БОЛЬШЕ ЧЕМ РАБОТА.',
-            style: TextStyle(fontSize: 10, letterSpacing: 1.8, color: muted),
+        if (wide) ...[_navigation(), const SizedBox(width: 22)],
+        FilledButton(
+          onPressed: () => _scrollTo(_loginKey),
+          style: FilledButton.styleFrom(
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 12),
+            minimumSize: const Size(0, 42),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-          const SizedBox(width: 30),
-        ],
-        const Tag('Демо', color: cyan, background: Color(0xFF1A2947)),
+          child: const Text('Вход'),
+        ),
       ],
     ),
   );
 
+  Widget _navigation() => Wrap(
+    alignment: WrapAlignment.center,
+    spacing: 2,
+    children: [
+      _navButton('Возможности', onPressed: () => _scrollTo(_benefitsKey)),
+      _navButton('Как работает', onPressed: () => _scrollTo(_stepsKey)),
+      _navButton('Вопросы', onPressed: () => _scrollTo(_faqKey)),
+    ],
+  );
+
+  Widget _navButton(String label, {required VoidCallback onPressed}) =>
+      TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: muted,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        child: Text(label),
+      );
+
   Widget _hero(bool wide) => ClipRRect(
-    borderRadius: BorderRadius.circular(28),
+    borderRadius: BorderRadius.circular(30),
     child: SizedBox(
       height:
           (wide ? 718.0 : 360.0) *
@@ -186,15 +235,6 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (wide) ...[
-                  const Tag(
-                    'ВАША КАРЬЕРА. ВАШ МАРШРУТ.',
-                    color: cyan,
-                    background: Color(0xB91D2D55),
-                    icon: Icons.auto_awesome_outlined,
-                  ),
-                  const SizedBox(height: 30),
-                ],
                 Text.rich(
                   TextSpan(
                     children: [
@@ -216,15 +256,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 15),
-                Text(
-                  'Твой путь.\nБольше чем работа.',
-                  style: TextStyle(
-                    color: ink,
-                    fontSize: wide ? 32 : 24,
-                    letterSpacing: -.7,
-                    height: 1.25,
-                    fontWeight: FontWeight.w700,
-                  ),
+                _TypewriterHeadline(
+                  wide: wide,
+                  animate: !busy && error == null,
                 ),
                 if (wide) ...[
                   const SizedBox(height: 23),
@@ -256,7 +290,7 @@ class _LoginPageState extends State<LoginPage> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 border: Border.all(color: blue.withValues(alpha: .45)),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(30),
               ),
             ),
           ),
@@ -271,20 +305,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  blue.withValues(alpha: .24),
-                  pink.withValues(alpha: .2),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: violet.withValues(alpha: .4)),
-            ),
-            child: const Icon(Icons.explore_outlined, color: pink, size: 25),
-          ),
+          const QuestMark(size: 52),
           const SizedBox(height: 23),
           const Text(
             'Рады видеть вас',
@@ -382,7 +403,7 @@ class _LoginPageState extends State<LoginPage> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  'ПОПРОБОВАТЬ ДЕМО',
+                  'ВЫБЕРИТЕ ПРОФИЛЬ',
                   style: TextStyle(
                     color: muted,
                     fontSize: 9,
@@ -402,24 +423,34 @@ class _LoginPageState extends State<LoginPage> {
                   'Мой профиль и цель',
                   Icons.person_outline,
                   'employee.demo',
-                  'Employee123!',
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _demo(
                   'HR',
-                  'Люди и импорт',
+                  'Команда и развитие',
                   Icons.groups_outlined,
                   'hr.demo',
-                  'Hr123!',
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: busy
+                ? null
+                : () => setState(() {
+                    selected = 'colleague.demo';
+                    username.text = selected;
+                    password.clear();
+                    error = null;
+                  }),
+            child: const Text('Другой сотрудник · colleague.demo'),
+          ),
           const SizedBox(height: 17),
           const Text(
-            'Демонстрационные аккаунты с синтетическими данными. Выбор заполнит логин и пароль.',
+            'Тестовые профили с синтетическими данными. Выбор заполнит логин; пароль задаётся при запуске сервера.',
             style: TextStyle(color: muted, fontSize: 11, height: 1.7),
           ),
         ],
@@ -432,23 +463,22 @@ class _LoginPageState extends State<LoginPage> {
     String subtitle,
     IconData icon,
     String login,
-    String pass,
   ) => Material(
     color: selected == login
         ? const Color(0xFF312747)
         : const Color(0xFF17213B),
     shape: RoundedRectangleBorder(
       side: BorderSide(color: selected == login ? pink : line),
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(18),
     ),
     child: InkWell(
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(18),
       onTap: busy
           ? null
           : () => setState(() {
               selected = login;
               username.text = login;
-              password.text = pass;
+              password.clear();
               error = null;
             }),
       child: Padding(
@@ -479,15 +509,23 @@ class _LoginPageState extends State<LoginPage> {
       gradient: const LinearGradient(
         colors: [Color(0xE619284A), Color(0xDD272043)],
       ),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       border: Border.all(color: violet.withValues(alpha: .45)),
     ),
     child: Row(
       children: [
         Expanded(child: _node(Icons.fingerprint, 'Твой профиль', blue)),
-        const Icon(Icons.arrow_forward_rounded, color: muted, size: 16),
+        const Icon(
+          Icons.arrow_forward_rounded,
+          color: Color(0xFFD7DCF2),
+          size: 30,
+        ),
         Expanded(child: _node(Icons.auto_graph, 'Твои навыки', violet)),
-        const Icon(Icons.arrow_forward_rounded, color: muted, size: 16),
+        const Icon(
+          Icons.arrow_forward_rounded,
+          color: Color(0xFFD7DCF2),
+          size: 30,
+        ),
         Expanded(child: _node(Icons.flag_outlined, 'Твоя цель', pink)),
       ],
     ),
@@ -499,7 +537,7 @@ class _LoginPageState extends State<LoginPage> {
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: .15),
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(color: accent.withValues(alpha: .28)),
         ),
         child: Icon(icon, color: accent, size: 21),
@@ -512,4 +550,121 @@ class _LoginPageState extends State<LoginPage> {
       ),
     ],
   );
+}
+
+class _TypewriterHeadline extends StatefulWidget {
+  const _TypewriterHeadline({required this.wide, required this.animate});
+  final bool wide;
+  final bool animate;
+
+  @override
+  State<_TypewriterHeadline> createState() => _TypewriterHeadlineState();
+}
+
+class _TypewriterHeadlineState extends State<_TypewriterHeadline> {
+  static const phrases = [
+    'больше, чем работа.',
+    'рост в своём ритме.',
+    'маршрут к новой роли.',
+    'цель, к которой идёшь.',
+  ];
+
+  Timer? timer;
+  int phrase = 0;
+  int characters = 0;
+  bool deleting = false;
+  bool reduceMotion = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final disabled = MediaQuery.disableAnimationsOf(context);
+    if (disabled == reduceMotion && timer != null) return;
+    reduceMotion = disabled;
+    timer?.cancel();
+    if (reduceMotion || !widget.animate) {
+      characters = phrases[phrase].length;
+    } else {
+      timer = Timer(const Duration(milliseconds: 420), tick);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TypewriterHeadline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animate == widget.animate || reduceMotion) return;
+    timer?.cancel();
+    if (widget.animate) {
+      timer = Timer(const Duration(milliseconds: 420), tick);
+    } else {
+      characters = phrases[phrase].length;
+      deleting = false;
+    }
+  }
+
+  void tick() {
+    if (!mounted || reduceMotion || !widget.animate) return;
+    final current = phrases[phrase];
+    var delay = 72;
+
+    setState(() {
+      if (!deleting && characters < current.length) {
+        characters += 1;
+      } else if (!deleting) {
+        deleting = true;
+        delay = 1450;
+      } else if (deleting && characters > 0) {
+        characters -= 1;
+        delay = 34;
+      } else if (deleting) {
+        deleting = false;
+        phrase = (phrase + 1) % phrases.length;
+        delay = 260;
+      }
+    });
+    timer = Timer(Duration(milliseconds: delay), tick);
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final current = phrases[phrase];
+    final visible = current.substring(0, characters.clamp(0, current.length));
+    final style = TextStyle(
+      color: ink,
+      fontSize: widget.wide ? 32 : 24,
+      letterSpacing: -.7,
+      height: 1.25,
+      fontWeight: FontWeight.w700,
+    );
+
+    return Semantics(
+      label: 'Твой путь — это $current',
+      child: ExcludeSemantics(
+        child: SizedBox(
+          height: widget.wide ? 82 : 92,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Твой путь — это', style: style),
+              Row(
+                children: [
+                  Flexible(child: Text(visible, style: style)),
+                  if (!reduceMotion && widget.animate) ...[
+                    const SizedBox(width: 3),
+                    Text('▍', style: style.copyWith(color: pink)),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
