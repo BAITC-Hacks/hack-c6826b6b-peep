@@ -30,7 +30,15 @@ frontend/linux/flutter/generated_plugins.cmake
 frontend/windows/flutter/generated_plugin_registrant.*
 frontend/windows/flutter/generated_plugins.cmake
 data/local/
-data/sample/
+# Keep only the original hackathon starter kit in the private team repository.
+data/sample/*
+!data/sample/employees.json
+!data/sample/events.json
+!data/sample/skills.json
+!data/sample/activity_history.csv
+!data/sample/README.md
+!data/sample/README.ru.md
+!data/sample/README.kz.md
 .career-build.json
 .requirements-installed
 
